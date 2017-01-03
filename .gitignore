@@ -1,2 +1,3 @@
 *.o
 6502-emu
+memdump
