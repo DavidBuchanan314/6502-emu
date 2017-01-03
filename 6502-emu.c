@@ -6,7 +6,7 @@
 #include "6502.h"
 #include "6850.h"
 
-struct termios oldTermios;
+struct termios initial_termios;
 
 void step_delay()
 {
@@ -32,17 +32,17 @@ void run_cpu()
 
 void restore_stdin()
 {
-	tcsetattr(0, TCSANOW, &oldTermios);
+	tcsetattr(0, TCSANOW, &initial_termios);
 }
 
 void raw_stdin()
 {
-	struct termios newTermios;
+	struct termios new_termios;
 	
-	tcgetattr(0, &oldTermios);
-	newTermios = oldTermios;
-	cfmakeraw(&newTermios);
-	tcsetattr(0, TCSANOW, &newTermios);
+	tcgetattr(0, &initial_termios);
+	new_termios = initial_termios;
+	cfmakeraw(&new_termios);
+	tcsetattr(0, TCSANOW, &new_termios);
 	atexit(restore_stdin);
 }
 

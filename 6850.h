@@ -19,7 +19,7 @@ union UartStatusReg {
 
 union UartStatusReg uart_SR;
 
-uint8_t incomingChar;
+uint8_t incoming_char;
 
 void init_uart();
 

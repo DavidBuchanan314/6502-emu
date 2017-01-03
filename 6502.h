@@ -16,8 +16,8 @@ uint8_t Y;
 uint16_t PC;
 uint8_t SP; // points to first empty stack location
 
-void * readAddr;
-void * writeAddr;
+void * read_addr;
+void * write_addr;
 
 struct StatusBits{
 	int carry:1; // bit 0

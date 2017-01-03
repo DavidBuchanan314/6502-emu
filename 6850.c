@@ -15,7 +15,7 @@ void init_uart() {
 	uart_SR.bits.TDRE = 1; // we are always ready to output data
 	
 	uart_SR.bits.RDRF = 0;
-	incomingChar = 0;
+	incoming_char = 0;
 	
 }
 
@@ -27,22 +27,22 @@ int stdin_ready() {
 }
 
 void step_uart() {
-	if (writeAddr == &memory[DATA_ADDR]) {
+	if (write_addr == &memory[DATA_ADDR]) {
 		putchar(memory[DATA_ADDR]);
 		fflush(stdout);
-		writeAddr = NULL;
-	} else if (readAddr == &memory[DATA_ADDR]) {
+		write_addr = NULL;
+	} else if (read_addr == &memory[DATA_ADDR]) {
 		uart_SR.bits.RDRF = 0;
-		readAddr = NULL;
+		read_addr = NULL;
 	}
 	
 	/* update input register if empty */
 	if ((n++ % 10000) == 0) { // polling stdin every cycle is performance intensive. This is a bit of a dirty hack.
 		if (!uart_SR.bits.RDRF && stdin_ready()) { // the real hardware has no buffer. Remote the RDRF check for more accurate emulation.
-			if (read(0, &incomingChar, 1) != 1) {
+			if (read(0, &incoming_char, 1) != 1) {
 				printf("Warning: read() returned 0\n");
 			}
-			if (incomingChar == 0x18) { // CTRL+X
+			if (incoming_char == 0x18) { // CTRL+X
 				printf("\r\n");
 				exit(0);
 			}
@@ -50,6 +50,6 @@ void step_uart() {
 		}
 	}
 	
-	memory[DATA_ADDR] = incomingChar;
+	memory[DATA_ADDR] = incoming_char;
 	memory[CTRL_ADDR] = uart_SR.byte;
 }

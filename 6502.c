@@ -14,12 +14,12 @@ int jumping; // used to check that we don't need to increment the PC after a jum
 
 /* Flag Checks */
 
-static inline void Nflag(int8_t val)
+static inline void N_flag(int8_t val)
 {
 	SR.bits.sign = val < 0;
 }
 
-static inline void Zflag(uint8_t val)
+static inline void Z_flag(uint8_t val)
 {
 	SR.bits.zero = val == 0;
 }
@@ -40,12 +40,12 @@ static inline uint8_t stack_pull()
 
 static inline uint8_t * read_ptr()
 {
-	return readAddr = get_ptr[inst.mode]();
+	return read_addr = get_ptr[inst.mode]();
 }
 
 static inline uint8_t * write_ptr()
 {
-	return writeAddr = get_ptr[inst.mode]();
+	return write_addr = get_ptr[inst.mode]();
 }
 
 /* Instruction Implementations */
@@ -57,15 +57,15 @@ static void inst_ADC()
 	SR.bits.carry = tmp > 0xFF;
 	SR.bits.overflow =  ((A^tmp)&(operand^tmp)&0x80) != 0;
 	A = tmp & 0xFF;
-	Nflag(A);
-	Zflag(A);
+	N_flag(A);
+	Z_flag(A);
 }
 
 static void inst_AND()
 {
 	A &= * read_ptr();
-	Nflag(A);
-	Zflag(A);
+	N_flag(A);
+	Z_flag(A);
 }
 
 static void inst_ASL()
@@ -73,8 +73,8 @@ static void inst_ASL()
 	uint8_t tmp = * read_ptr();
 	SR.bits.carry = (tmp & 0x80) != 0;
 	tmp <<= 1;
-	Nflag(tmp);
-	Zflag(tmp);
+	N_flag(tmp);
+	Z_flag(tmp);
 	* write_ptr() = tmp;
 }
 
@@ -102,8 +102,8 @@ static void inst_BEQ()
 static void inst_BIT()
 {
 	uint8_t tmp = * read_ptr();
-	Nflag(tmp);
-	Zflag(tmp & A);
+	N_flag(tmp);
+	Z_flag(tmp & A);
 	SR.bits.overflow = (tmp & 0x40) != 0;
 }
 
@@ -180,8 +180,8 @@ static void inst_CMP()
 {
 	uint8_t operand = * read_ptr();
 	uint8_t tmpDiff = A - operand;
-	Nflag(tmpDiff);
-	Zflag(tmpDiff);
+	N_flag(tmpDiff);
+	Z_flag(tmpDiff);
 	SR.bits.carry = A >= operand;
 }
 
@@ -189,8 +189,8 @@ static void inst_CPX()
 {
 	uint8_t operand = * read_ptr();
 	uint8_t tmpDiff = X - operand;
-	Nflag(tmpDiff);
-	Zflag(tmpDiff);
+	N_flag(tmpDiff);
+	Z_flag(tmpDiff);
 	SR.bits.carry = X >= operand;
 }
 
@@ -198,8 +198,8 @@ static void inst_CPY()
 {
 	uint8_t operand = * read_ptr();
 	uint8_t tmpDiff = Y - operand;
-	Nflag(tmpDiff);
-	Zflag(tmpDiff);
+	N_flag(tmpDiff);
+	Z_flag(tmpDiff);
 	SR.bits.carry = Y >= operand;
 }
 
@@ -207,53 +207,53 @@ static void inst_DEC()
 {
 	uint8_t tmp = * read_ptr();
 	tmp--;
-	Nflag(tmp);
-	Zflag(tmp);
+	N_flag(tmp);
+	Z_flag(tmp);
 	* write_ptr() = tmp;
 }
 
 static void inst_DEX()
 {
 	X--;
-	Nflag(X);
-	Zflag(X);
+	N_flag(X);
+	Z_flag(X);
 }
 
 static void inst_DEY()
 {
 	Y--;
-	Nflag(Y);
-	Zflag(Y);
+	N_flag(Y);
+	Z_flag(Y);
 }
 
 static void inst_EOR()
 {
 	A ^= * read_ptr();
-	Nflag(A);
-	Zflag(A);
+	N_flag(A);
+	Z_flag(A);
 }
 
 static void inst_INC()
 {
 	uint8_t tmp = * read_ptr();
 	tmp++;
-	Nflag(tmp);
-	Zflag(tmp);
+	N_flag(tmp);
+	Z_flag(tmp);
 	* write_ptr() = tmp;
 }
 
 static void inst_INX()
 {
 	X++;
-	Nflag(X);
-	Zflag(X);
+	N_flag(X);
+	Z_flag(X);
 }
 
 static void inst_INY()
 {
 	Y++;
-	Nflag(Y);
-	Zflag(Y);
+	N_flag(Y);
+	Z_flag(Y);
 }
 
 static void inst_JMP()
@@ -275,22 +275,22 @@ static void inst_JSR()
 static void inst_LDA()
 {
 	A = * read_ptr();
-	Nflag(A);
-	Zflag(A);
+	N_flag(A);
+	Z_flag(A);
 }
 
 static void inst_LDX()
 {
 	X = * read_ptr();
-	Nflag(X);
-	Zflag(X);
+	N_flag(X);
+	Z_flag(X);
 }
 
 static void inst_LDY()
 {
 	Y = * read_ptr();
-	Nflag(Y);
-	Zflag(Y);
+	N_flag(Y);
+	Z_flag(Y);
 }
 
 static void inst_LSR()
@@ -298,8 +298,8 @@ static void inst_LSR()
 	uint8_t tmp = * read_ptr();
 	SR.bits.carry = tmp & 1;
 	tmp >>= 1;
-	Nflag(tmp);
-	Zflag(tmp);
+	N_flag(tmp);
+	Z_flag(tmp);
 	* write_ptr() = tmp;
 }
 
@@ -311,8 +311,8 @@ static void inst_NOP()
 static void inst_ORA()
 {
 	A |= * read_ptr();
-	Nflag(A);
-	Zflag(A);
+	N_flag(A);
+	Z_flag(A);
 }
 
 static void inst_PHA()
@@ -329,8 +329,8 @@ static void inst_PHP()
 static void inst_PLA()
 {
 	A = stack_pull();
-	Nflag(A);
-	Zflag(A);
+	N_flag(A);
+	Z_flag(A);
 }
 
 static void inst_PLP()
@@ -345,8 +345,8 @@ static void inst_ROL()
 	tmp |= SR.bits.carry & 1;
 	SR.bits.carry = tmp > 0xFF;
 	tmp &= 0xFF;
-	Nflag(tmp);
-	Zflag(tmp);
+	N_flag(tmp);
+	Z_flag(tmp);
 	* write_ptr() = tmp;
 }
 
@@ -356,8 +356,8 @@ static void inst_ROR()
 	tmp |= SR.bits.carry << 8;
 	SR.bits.carry = tmp & 1;
 	tmp >>= 1;
-	Nflag(tmp);
-	Zflag(tmp);
+	N_flag(tmp);
+	Z_flag(tmp);
 	* write_ptr() = tmp;
 }
 
@@ -386,8 +386,8 @@ static void inst_SBC()
 	SR.bits.carry = tmp > 0xFF;
 	SR.bits.overflow =  ((A^tmp)&(operand^tmp)&0x80) != 0;
 	A = tmp & 0xFF;
-	Nflag(A);
-	Zflag(A);
+	N_flag(A);
+	Z_flag(A);
 }
 
 static void inst_SEC()
@@ -424,29 +424,29 @@ static void inst_STY()
 static void inst_TAX()
 {
 	X = A;
-	Nflag(X);
-	Zflag(X);
+	N_flag(X);
+	Z_flag(X);
 }
 
 static void inst_TAY()
 {
 	Y = A;
-	Nflag(Y);
-	Zflag(Y);
+	N_flag(Y);
+	Z_flag(Y);
 }
 
 static void inst_TSX()
 {
 	X = SP;
-	Nflag(X);
-	Zflag(X);
+	N_flag(X);
+	Z_flag(X);
 }
 
 static void inst_TXA()
 {
 	A = X;
-	Nflag(A);
-	Zflag(A);
+	N_flag(A);
+	Z_flag(A);
 }
 
 static void inst_TXS()
@@ -457,8 +457,8 @@ static void inst_TXS()
 static void inst_TYA()
 {
 	A = Y;
-	Nflag(A);
-	Zflag(A);
+	N_flag(A);
+	Z_flag(A);
 }
 
 /* Addressing Implementations */
