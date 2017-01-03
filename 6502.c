@@ -465,7 +465,7 @@ static void inst_TYA()
 
 uint8_t * get_IMM()
 {
-	return &memory[PC+1];
+	return &memory[(uint16_t) (PC+1)];
 }
 
 uint16_t get_uint16()
@@ -477,17 +477,17 @@ uint16_t get_uint16()
 
 uint8_t * get_ZP()
 {
-	return &memory[memory[PC+1]];
+	return &memory[* get_IMM()];
 }
 
 uint8_t * get_ZPX()
 {
-	return &memory[(memory[PC+1] + X) & 0xFF];
+	return &memory[((* get_IMM()) + X) & 0xFF];
 }
 
 uint8_t * get_ZPY()
 {
-	return &memory[(memory[PC+1] + Y) & 0xFF];
+	return &memory[((* get_IMM()) + Y) & 0xFF];
 }
 
 uint8_t * get_ACC()
@@ -502,12 +502,12 @@ uint8_t * get_ABS()
 
 uint8_t * get_ABSX()
 {
-	return &memory[get_uint16()+X];
+	return &memory[(uint16_t) (get_uint16() + X)];
 }
 
 uint8_t * get_ABSY()
 {
-	return &memory[get_uint16()+Y];
+	return &memory[(uint16_t) (get_uint16() + Y)];
 }
 
 uint8_t * get_IND()
@@ -534,7 +534,7 @@ uint8_t * get_INDY()
 
 uint8_t * get_REL()
 {
-	return &memory[PC + (int8_t) memory[PC+1]];
+	return &memory[(uint16_t) (PC + (int8_t) * get_IMM())];
 }
 
 
