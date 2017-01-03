@@ -1,5 +1,5 @@
 # 6502-emu
-A relatively simple and bug-free 6502 emulator. It is capable of running ehBasic.
+A relatively bug-free and simple 6502 emulator. It is capable of running ehBasic.
 
 Many 6502 emulators make extensive use of macros, which I personally think makes
 code harder to understand. At the other extreme, some emulators implement each
