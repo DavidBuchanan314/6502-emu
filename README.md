@@ -79,3 +79,11 @@ RUN
 Ready
 
 ```
+
+### TODO:
+
+- Decimal mode.
+- Cycle-accurate timing.
+- GDB interface for easy debugging of 6502 programs (and the emulator itself).
+- Implement more hardware devices (mainly a 6522, also some character/graphics LCDs).
+- Turn it into a NES emulator.
