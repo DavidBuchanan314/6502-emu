@@ -20,14 +20,14 @@ void * read_addr;
 void * write_addr;
 
 struct StatusBits{
-	int carry:1; // bit 0
-	int zero:1;
-	int interrupt:1;
-	int decimal:1;
-	int brk:1; // "break" is a reserved word :(
-	int unused:1;
-	int overflow:1;
-	int sign:1;	// bit 7
+	unsigned char carry:1; // bit 0
+	unsigned char zero:1;
+	unsigned char interrupt:1;
+	unsigned char decimal:1;
+	unsigned char brk:1; // "break" is a reserved word :(
+	unsigned char unused:1;
+	unsigned char overflow:1;
+	unsigned char sign:1;	// bit 7
 };
 
 union StatusReg { // this means we can access the status register as a byte, or as individual bits.
