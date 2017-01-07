@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 
 #define CPU_FREQ 4000000
 #define STEP_DURATION 10000000 // 10ms
@@ -20,14 +21,14 @@ void * read_addr;
 void * write_addr;
 
 struct StatusBits{
-	unsigned char carry:1; // bit 0
-	unsigned char zero:1;
-	unsigned char interrupt:1;
-	unsigned char decimal:1;
-	unsigned char brk:1; // "break" is a reserved word :(
-	unsigned char unused:1;
-	unsigned char overflow:1;
-	unsigned char sign:1;	// bit 7
+	bool carry:1; // bit 0
+	bool zero:1;
+	bool interrupt:1;
+	bool decimal:1;
+	bool brk:1; // "break" is a reserved word :(
+	bool unused:1;
+	bool overflow:1;
+	bool sign:1;	// bit 7
 };
 
 union StatusReg { // this means we can access the status register as a byte, or as individual bits.
