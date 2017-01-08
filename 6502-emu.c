@@ -20,10 +20,12 @@ void step_delay()
 
 void run_cpu()
 {
-	for (;;) {		
-		// CPU timing is currently very far from being cycle-accurate
-		for (int i = 0; i < (CPU_FREQ / (ONE_SECOND / STEP_DURATION)); i++) {
-			step_cpu();
+	int cycles = 0;
+	int cycles_per_step = (CPU_FREQ / (ONE_SECOND / STEP_DURATION));
+	
+	for (;;) {
+		for (cycles %= cycles_per_step; cycles < cycles_per_step;) {
+			cycles += step_cpu();
 			step_uart();
 		}
 		step_delay(); // remove this for more speed
