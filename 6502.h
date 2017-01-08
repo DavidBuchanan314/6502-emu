@@ -1,8 +1,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define CPU_FREQ 4000000
-#define STEP_DURATION 10000000 // 10ms
+#define CPU_FREQ 4e6 // 4Mhz
+#define STEP_DURATION 10e6 // 10ms
 #define ONE_SECOND 1e9
 #define NUM_MODES 13
 
@@ -58,6 +58,7 @@ typedef struct {
 	char * mnemonic;
 	void (*function)();
 	Mode mode;
+	uint8_t cycles;
 } Instruction;
 
 Instruction instructions[0x100];
@@ -68,4 +69,4 @@ void reset_cpu();
 
 int load_rom(char * filename);
 
-void step_cpu();
+int step_cpu();
