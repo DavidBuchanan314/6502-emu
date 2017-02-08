@@ -29,6 +29,7 @@ int stdin_ready() {
 void step_uart() {
 	if (write_addr == &memory[DATA_ADDR]) {
 		putchar(memory[DATA_ADDR]);
+		if (memory[DATA_ADDR] == '\b') printf(" \b");
 		fflush(stdout);
 		write_addr = NULL;
 	} else if (read_addr == &memory[DATA_ADDR]) {
@@ -45,6 +46,9 @@ void step_uart() {
 			if (incoming_char == 0x18) { // CTRL+X
 				printf("\r\n");
 				exit(0);
+			}
+			if (incoming_char == 0x7F) { // Backspace
+				incoming_char = '\b';
 			}
 			uart_SR.bits.RDRF = 1;
 		}
