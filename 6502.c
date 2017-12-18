@@ -398,7 +398,6 @@ static void inst_SEC()
 static void inst_SED()
 {
 	SR.bits.decimal = 1;
-	printf("DECIMAL! :(\r\n"); // TODO
 }
 
 static void inst_SEI()
