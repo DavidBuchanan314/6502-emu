@@ -541,7 +541,13 @@ uint8_t * get_XIND()
 uint8_t * get_INDY()
 {
 	uint16_t ptr;
-	memcpy(&ptr, get_ZP(), sizeof(ptr));
+	ptr = * get_IMM();
+	if (ptr == 0xff) { // check for wraparound in zero page
+		ptr = memory[ptr] + (memory[ptr & 0xff00] << 8);
+	}
+	else {
+		memcpy(&ptr, &memory[ptr], sizeof(ptr));
+	}
 	ptr += Y;
 	return &memory[ptr];
 }
