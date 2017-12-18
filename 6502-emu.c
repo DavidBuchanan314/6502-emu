@@ -19,7 +19,7 @@ void step_delay()
 	nanosleep(&req, &rem);
 }
 
-void run_cpu(int verbose, int mem_dump)
+void run_cpu(int cycle_stop, int verbose, int mem_dump)
 {
 	int cycles = 0;
 	int cycles_per_step = (CPU_FREQ / (ONE_SECOND / STEP_DURATION));
@@ -28,10 +28,13 @@ void run_cpu(int verbose, int mem_dump)
 		for (cycles %= cycles_per_step; cycles < cycles_per_step;) {
 			if (mem_dump) save_memory(NULL);
 			cycles += step_cpu(verbose);
+			if ((cycle_stop > 0) && (cycles >= cycle_stop)) goto end;
 			step_uart();
 		}
 		step_delay(); // remove this for more speed
 	}
+end:
+	return;
 }
 
 void restore_stdin()
@@ -61,19 +64,20 @@ int hextoint(char *str) {
 int main(int argc, char *argv[])
 {
 	int a, x, y, sp, sr, pc;
-	int verbose, interactive, mem_dump;
+	int verbose, interactive, mem_dump, cycles;
 	int opt;
 
 	verbose = 0;
 	interactive = 0;
 	mem_dump = 0;
+	cycles = 0;
 	a = 0;
 	x = 0;
 	y = 0;
 	sp = 0;
 	sr = 0;
 	pc = -RST_VEC;  // negative implies indirect
-	while ((opt = getopt(argc, argv, "vima:x:y:r:p:s:g:")) != -1) {
+	while ((opt = getopt(argc, argv, "vima:x:y:r:p:s:g:c:")) != -1) {
 		switch (opt) {
 		case 'v':
 			verbose = 1;
@@ -103,6 +107,9 @@ int main(int argc, char *argv[])
 		case 'g':
 			pc = hextoint(optarg);
 			break;
+		case 'c':
+			cycles = atoi(optarg);
+			break;
 	    default: /* '?' */
 			fprintf(stderr, "Usage: %s [-v] [-i] [-a HEX] [-x HEX] [-y HEX] [-s HEX] [-p HEX] [-g|-r ADDR] file.rom\nThe first 16k of \"file.rom\" is loaded into the last 16k of memory.\n",
 	               argv[0]);
@@ -125,7 +132,7 @@ int main(int argc, char *argv[])
 	init_uart();
 	
 	reset_cpu(a, x, y, sp, sr, pc);
-	run_cpu(verbose, mem_dump);
+	run_cpu(cycles, verbose, mem_dump);
 	
 	return EXIT_SUCCESS;
 }
