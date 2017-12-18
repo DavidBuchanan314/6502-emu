@@ -528,7 +528,13 @@ uint8_t * get_IND()
 uint8_t * get_XIND()
 {
 	uint16_t ptr;
-	memcpy(&ptr, get_ZPX(), sizeof(ptr));
+	ptr = ((* get_IMM()) + X) & 0xFF;
+	if (ptr == 0xff) { // check for wraparound in zero page
+		ptr = memory[ptr] + (memory[ptr & 0xff00] << 8);
+	}
+	else {
+		memcpy(&ptr, &memory[ptr], sizeof(ptr));
+	}
 	return &memory[ptr];
 }
 
@@ -588,7 +594,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	lengths[ZPX]	= 2;
 	lengths[ZPY]	= 2;
 	lengths[JMP_IND_BUG] = 3;
-	
+
 	/* Addressing Modes */
 	
 	get_ptr[ACC]	= get_ACC;
@@ -604,7 +610,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	get_ptr[ZPX]	= get_ZPX;
 	get_ptr[ZPY]	= get_ZPY;
 	get_ptr[JMP_IND_BUG] = get_JMP_IND_BUG;
-	
+
 	/* Instructions */
 	
 	instructions[0x00] = (Instruction) {"BRK impl", inst_BRK, IMPL, 7,};
