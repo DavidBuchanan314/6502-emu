@@ -65,8 +65,10 @@ Instruction instructions[0x100];
 
 void init_tables();
 
-void reset_cpu();
+void reset_cpu(int _a, int _x, int _y, int _sp, int _sr, int _pc);
 
 int load_rom(char * filename);
 
-int step_cpu();
+int step_cpu(int verbose);
+
+void save_memory(char * filename);

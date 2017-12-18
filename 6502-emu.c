@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <termios.h>
 #include <time.h>
 
@@ -18,14 +19,15 @@ void step_delay()
 	nanosleep(&req, &rem);
 }
 
-void run_cpu()
+void run_cpu(int verbose, int mem_dump)
 {
 	int cycles = 0;
 	int cycles_per_step = (CPU_FREQ / (ONE_SECOND / STEP_DURATION));
 	
 	for (;;) {
 		for (cycles %= cycles_per_step; cycles < cycles_per_step;) {
-			cycles += step_cpu();
+			if (mem_dump) save_memory(NULL);
+			cycles += step_cpu(verbose);
 			step_uart();
 		}
 		step_delay(); // remove this for more speed
@@ -48,26 +50,82 @@ void raw_stdin()
 	atexit(restore_stdin);
 }
 
+int hextoint(char *str) {
+	int val;
+
+	if (*str == '$') str++;
+	val = strtol(str, NULL, 16);
+	return val;
+}
+
 int main(int argc, char *argv[])
 {
-	if (argc != 2) {
-		printf("Usage: %s file.rom\n", argv[0]);
-		printf("The first 16k of \"file.rom\" is loaded into the last 16k of memory.\n");
+	int a, x, y, sp, sr, pc;
+	int verbose, interactive, mem_dump;
+	int opt;
+
+	verbose = 0;
+	interactive = 0;
+	mem_dump = 0;
+	a = 0;
+	x = 0;
+	y = 0;
+	sp = 0;
+	sr = 0;
+	pc = -RST_VEC;  // negative implies indirect
+	while ((opt = getopt(argc, argv, "vima:x:y:r:p:s:g:")) != -1) {
+		switch (opt) {
+		case 'v':
+			verbose = 1;
+			break;
+		case 'i':
+			interactive = 1;
+			break;
+		case 'm':
+			mem_dump = 1;
+			break;
+		case 'a':
+			a = hextoint(optarg);
+			break;
+		case 'x':
+			x = hextoint(optarg);
+			break;
+		case 'y':
+			y = hextoint(optarg);
+			break;
+		case 's':
+			sp = hextoint(optarg);
+			break;
+		case 'p':
+			sr = hextoint(optarg);
+			break;
+		case 'r':
+		case 'g':
+			pc = hextoint(optarg);
+			break;
+	    default: /* '?' */
+			fprintf(stderr, "Usage: %s [-v] [-i] [-a HEX] [-x HEX] [-y HEX] [-s HEX] [-p HEX] [-g|-r ADDR] file.rom\nThe first 16k of \"file.rom\" is loaded into the last 16k of memory.\n",
+	               argv[0]);
+	       exit(EXIT_FAILURE);
+	   }
+	}
+
+	if (optind >= argc) {
+	   fprintf(stderr, "Expected argument after options\n");
+	   exit(EXIT_FAILURE);
+	}
+	if (load_rom(argv[optind]) != 0) {
+		printf("Error loading \"%s\".\n", argv[optind]);
 		return EXIT_FAILURE;
 	}
 	
-	if (load_rom(argv[1]) != 0) {
-		printf("Error loading \"%s\".\n", argv[1]);
-		return EXIT_FAILURE;
-	}
-	
-	raw_stdin(); // allow individual keystrokes to be detected
+	if (interactive) raw_stdin(); // allow individual keystrokes to be detected
 	
 	init_tables();
 	init_uart();
 	
-	reset_cpu();
-	run_cpu();
+	reset_cpu(a, x, y, sp, sr, pc);
+	run_cpu(verbose, mem_dump);
 	
 	return EXIT_SUCCESS;
 }

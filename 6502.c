@@ -833,18 +833,21 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0xFF] = (Instruction) {"???", inst_NOP, IMPL, 1};
 }
 
-void reset_cpu()
+void reset_cpu(int _a, int _x, int _y, int _sp, int _sr, int _pc)
 {
-	A = 0;
-	X = 0;
-	Y = 0;
-	SP = 0xFF;
+	A = _a;
+	X = _x;
+	Y = _y;
+	SP = _sp;
 	
-	SR.byte = 0;
+	SR.byte = _sr;
 	SR.bits.interrupt = 1;
 	SR.bits.unused = 1;
 	
-	memcpy(&PC, &memory[RST_VEC], sizeof(PC));
+	if (_pc < 0)
+		memcpy(&PC, &memory[-_pc], sizeof(PC));
+	else
+		PC = _pc;
 }
 
 int load_rom(char * filename)
@@ -866,24 +869,32 @@ int load_rom(char * filename)
 	return 0;
 }
 
-int step_cpu() // returns cycle count
+int step_cpu(int verbose) // returns cycle count
 {
 	inst = instructions[memory[PC]];
 
-	#ifdef DEBUG
-		printf("PC=%04X OPCODE=%02X: %s\r\n", PC, memory[PC], inst.mnemonic);
-		printf("A=%02X X=%02X Y=%02X SR=%02X SP=%02X\r\n", A, X, Y, SR.byte, SP);
-	
-		/* dump memory for analysis (slows down emulation significantly) */
-	
-		FILE * fp = fopen("memdump", "w");
-		fwrite(&memory, sizeof(memory), 1, fp);
-		fclose(fp);
-	#endif
-	
+	if (verbose) {
+		// almost match for NES dump for easier comparison
+		printf("%04X  ", PC);
+		if (lengths[inst.mode] == 3)
+			printf("%02X %02X %02X", memory[PC], memory[PC+1], memory[PC+2]);
+		else if (lengths[inst.mode] == 2)
+			printf("%02X %02X   ", memory[PC], memory[PC+1]);
+		else
+			printf("%02X      ", memory[PC]);
+		printf("  %-10s                      A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%03d\n", inst.mnemonic, A, X, Y, SR.byte, SP, 0);
+	}
+
 	jumping = 0;
 	inst.function();
 	if (jumping == 0) PC += lengths[inst.mode];
 	
 	return inst.cycles;
+}
+
+void save_memory(char * filename) { // dump memory for analysis (slows down emulation significantly)
+	if (filename == NULL) filename = "memdump";
+	FILE * fp = fopen(filename, "w");
+	fwrite(&memory, sizeof(memory), 1, fp);
+	fclose(fp);
 }
