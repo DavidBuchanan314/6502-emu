@@ -322,8 +322,16 @@ static void inst_PHA()
 
 static void inst_PHP()
 {
-	SR.bits.brk = 1; // this is slightly unexpected, but it's what the real hardware does.
-	stack_push(SR.byte);
+	union StatusReg pushed_sr;
+
+	// PHP sets the BRK flag in the byte that is pushed onto the stack,
+	// but doesn't affect the status register itself. this is slightly
+	// unexpected, but it's what the real hardware does.
+	//
+	// See http://visual6502.org/wiki/index.php?title=6502_BRK_and_B_bit
+	pushed_sr.byte = SR.byte;
+	pushed_sr.bits.brk = 1;
+	stack_push(pushed_sr.byte);
 }
 
 static void inst_PLA()
