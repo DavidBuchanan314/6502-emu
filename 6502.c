@@ -623,7 +623,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0x01] = (Instruction) {"ORA X,ind", inst_ORA, XIND, 6};
 	instructions[0x02] = (Instruction) {"???", inst_NOP, IMPL, 1};
 	instructions[0x03] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0x04] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0x04] = (Instruction) {"???", inst_NOP, ZP, 1};
 	instructions[0x05] = (Instruction) {"ORA zpg", inst_ORA, ZP, 5};
 	instructions[0x06] = (Instruction) {"ASL zpg", inst_ASL, ZP, 1};
 	instructions[0x07] = (Instruction) {"???", inst_NOP, IMPL, 1};
@@ -631,7 +631,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0x09] = (Instruction) {"ORA #", inst_ORA, IMM, 1};
 	instructions[0x0A] = (Instruction) {"ASL A", inst_ASL, ACC, 1};
 	instructions[0x0B] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0x0C] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0x0C] = (Instruction) {"???", inst_NOP, ABS, 1};
 	instructions[0x0D] = (Instruction) {"ORA abs", inst_ORA, ABS, 1};
 	instructions[0x0E] = (Instruction) {"ASL abs", inst_ASL, ABS, 1};
 	instructions[0x0F] = (Instruction) {"???", inst_NOP, IMPL, 1};
@@ -639,7 +639,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0x11] = (Instruction) {"ORA ind,Y", inst_ORA, INDY, 1};
 	instructions[0x12] = (Instruction) {"???", inst_NOP, IMPL, 1};
 	instructions[0x13] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0x14] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0x14] = (Instruction) {"???", inst_NOP, ZP, 1};
 	instructions[0x15] = (Instruction) {"ORA zpg,X", inst_ORA, ZPX, 1};
 	instructions[0x16] = (Instruction) {"ASL zpg,X", inst_ASL, ZPX, 1};
 	instructions[0x17] = (Instruction) {"???", inst_NOP, IMPL, 1};
@@ -647,7 +647,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0x19] = (Instruction) {"ORA abs,Y", inst_ORA, ABSY, 1};
 	instructions[0x1A] = (Instruction) {"???", inst_NOP, IMPL, 1};
 	instructions[0x1B] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0x1C] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0x1C] = (Instruction) {"???", inst_NOP, ABSX, 1};
 	instructions[0x1D] = (Instruction) {"ORA abs,X", inst_ORA, ABSX, 1};
 	instructions[0x1E] = (Instruction) {"ASL abs,X", inst_ASL, ABSX, 1};
 	instructions[0x1F] = (Instruction) {"???", inst_NOP, IMPL, 1};
@@ -671,7 +671,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0x31] = (Instruction) {"AND ind,Y", inst_AND, INDY, 1};
 	instructions[0x32] = (Instruction) {"???", inst_NOP, IMPL, 1};
 	instructions[0x33] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0x34] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0x34] = (Instruction) {"???", inst_NOP, ZP, 1};
 	instructions[0x35] = (Instruction) {"AND zpg,X", inst_AND, ZPX, 1};
 	instructions[0x36] = (Instruction) {"ROL zpg,X", inst_ROL, ZPX, 1};
 	instructions[0x37] = (Instruction) {"???", inst_NOP, IMPL, 1};
@@ -679,7 +679,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0x39] = (Instruction) {"AND abs,Y", inst_AND, ABSY, 1};
 	instructions[0x3A] = (Instruction) {"???", inst_NOP, IMPL, 1};
 	instructions[0x3B] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0x3C] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0x3C] = (Instruction) {"???", inst_NOP, ABSX, 1};
 	instructions[0x3D] = (Instruction) {"AND abs,X", inst_AND, ABSX, 1};
 	instructions[0x3E] = (Instruction) {"ROL abs,X", inst_ROL, ABSX, 1};
 	instructions[0x3F] = (Instruction) {"???", inst_NOP, IMPL, 1};
@@ -687,7 +687,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0x41] = (Instruction) {"EOR X,ind", inst_EOR, XIND, 1};
 	instructions[0x42] = (Instruction) {"???", inst_NOP, IMPL, 1};
 	instructions[0x43] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0x44] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0x44] = (Instruction) {"???", inst_NOP, ZP, 1};
 	instructions[0x45] = (Instruction) {"EOR zpg", inst_EOR, ZP, 1};
 	instructions[0x46] = (Instruction) {"LSR zpg", inst_LSR, ZP, 1};
 	instructions[0x47] = (Instruction) {"???", inst_NOP, IMPL, 1};
@@ -703,7 +703,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0x51] = (Instruction) {"EOR ind,Y", inst_EOR, INDY, 1};
 	instructions[0x52] = (Instruction) {"???", inst_NOP, IMPL, 1};
 	instructions[0x53] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0x54] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0x54] = (Instruction) {"???", inst_NOP, ZP, 1};
 	instructions[0x55] = (Instruction) {"EOR zpg,X", inst_EOR, ZPX, 1};
 	instructions[0x56] = (Instruction) {"LSR zpg,X", inst_LSR, ZPX, 1};
 	instructions[0x57] = (Instruction) {"???", inst_NOP, IMPL, 1};
@@ -711,7 +711,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0x59] = (Instruction) {"EOR abs,Y", inst_EOR, ABSY, 1};
 	instructions[0x5A] = (Instruction) {"???", inst_NOP, IMPL, 1};
 	instructions[0x5B] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0x5C] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0x5C] = (Instruction) {"???", inst_NOP, ABSX, 1};
 	instructions[0x5D] = (Instruction) {"EOR abs,X", inst_EOR, ABSX, 1};
 	instructions[0x5E] = (Instruction) {"LSR abs,X", inst_LSR, ABSX, 1};
 	instructions[0x5F] = (Instruction) {"???", inst_NOP, IMPL, 1};
@@ -719,7 +719,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0x61] = (Instruction) {"ADC X,ind", inst_ADC, XIND, 1};
 	instructions[0x62] = (Instruction) {"???", inst_NOP, IMPL, 1};
 	instructions[0x63] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0x64] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0x64] = (Instruction) {"???", inst_NOP, ZP, 1};
 	instructions[0x65] = (Instruction) {"ADC zpg", inst_ADC, ZP, 1};
 	instructions[0x66] = (Instruction) {"ROR zpg", inst_ROR, ZP, 1};
 	instructions[0x67] = (Instruction) {"???", inst_NOP, IMPL, 1};
@@ -735,7 +735,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0x71] = (Instruction) {"ADC ind,Y", inst_ADC, INDY, 1};
 	instructions[0x72] = (Instruction) {"???", inst_NOP, IMPL, 1};
 	instructions[0x73] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0x74] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0x74] = (Instruction) {"???", inst_NOP, ZP, 1};
 	instructions[0x75] = (Instruction) {"ADC zpg,X", inst_ADC, ZPX, 1};
 	instructions[0x76] = (Instruction) {"ROR zpg,X", inst_ROR, ZPX, 1};
 	instructions[0x77] = (Instruction) {"???", inst_NOP, IMPL, 1};
@@ -743,11 +743,11 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0x79] = (Instruction) {"ADC abs,Y", inst_ADC, ABSY, 1};
 	instructions[0x7A] = (Instruction) {"???", inst_NOP, IMPL, 1};
 	instructions[0x7B] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0x7C] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0x7C] = (Instruction) {"???", inst_NOP, ABSX, 1};
 	instructions[0x7D] = (Instruction) {"ADC abs,X", inst_ADC, ABSX, 1};
 	instructions[0x7E] = (Instruction) {"ROR abs,X", inst_ROR, ABSX, 1};
 	instructions[0x7F] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0x80] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0x80] = (Instruction) {"???", inst_NOP, IMM, 1};
 	instructions[0x81] = (Instruction) {"STA X,ind", inst_STA, XIND, 1};
 	instructions[0x82] = (Instruction) {"???", inst_NOP, IMPL, 1};
 	instructions[0x83] = (Instruction) {"???", inst_NOP, IMPL, 1};
@@ -831,7 +831,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0xD1] = (Instruction) {"CMP ind,Y", inst_CMP, INDY, 1};
 	instructions[0xD2] = (Instruction) {"???", inst_NOP, IMPL, 1};
 	instructions[0xD3] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0xD4] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0xD4] = (Instruction) {"???", inst_NOP, ZP, 1};
 	instructions[0xD5] = (Instruction) {"CMP zpg,X", inst_CMP, ZPX, 1};
 	instructions[0xD6] = (Instruction) {"DEC zpg,X", inst_DEC, ZPX, 1};
 	instructions[0xD7] = (Instruction) {"???", inst_NOP, IMPL, 1};
@@ -839,7 +839,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0xD9] = (Instruction) {"CMP abs,Y", inst_CMP, ABSY, 1};
 	instructions[0xDA] = (Instruction) {"???", inst_NOP, IMPL, 1};
 	instructions[0xDB] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0xDC] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0xDC] = (Instruction) {"???", inst_NOP, ABSX, 1};
 	instructions[0xDD] = (Instruction) {"CMP abs,X", inst_CMP, ABSX, 1};
 	instructions[0xDE] = (Instruction) {"DEC abs,X", inst_DEC, ABSX, 1};
 	instructions[0xDF] = (Instruction) {"???", inst_NOP, IMPL, 1};
@@ -863,7 +863,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0xF1] = (Instruction) {"SBC ind,Y", inst_SBC, INDY, 1};
 	instructions[0xF2] = (Instruction) {"???", inst_NOP, IMPL, 1};
 	instructions[0xF3] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0xF4] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0xF4] = (Instruction) {"???", inst_NOP, ZP, 1};
 	instructions[0xF5] = (Instruction) {"SBC zpg,X", inst_SBC, ZPX, 1};
 	instructions[0xF6] = (Instruction) {"INC zpg,X", inst_INC, ZPX, 1};
 	instructions[0xF7] = (Instruction) {"???", inst_NOP, IMPL, 1};
@@ -871,7 +871,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0xF9] = (Instruction) {"SBC abs,Y", inst_SBC, ABSY, 1};
 	instructions[0xFA] = (Instruction) {"???", inst_NOP, IMPL, 1};
 	instructions[0xFB] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0xFC] = (Instruction) {"???", inst_NOP, IMPL, 1};
+	instructions[0xFC] = (Instruction) {"???", inst_NOP, ABSX, 1};
 	instructions[0xFD] = (Instruction) {"SBC abs,X", inst_SBC, ABSX, 1};
 	instructions[0xFE] = (Instruction) {"INC abs,X", inst_INC, ABSX, 1};
 	instructions[0xFF] = (Instruction) {"???", inst_NOP, IMPL, 1};
