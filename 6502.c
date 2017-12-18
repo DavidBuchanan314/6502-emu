@@ -345,6 +345,7 @@ static void inst_PLP()
 {
 	SR.byte = stack_pull();
 	SR.bits.unused = 1;
+	SR.bits.brk = 0;
 }
 
 static void inst_ROL()
