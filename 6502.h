@@ -51,7 +51,8 @@ typedef enum {
 	REL,
 	ZP,
 	ZPX,
-	ZPY
+	ZPY,
+	JMP_IND_BUG,
 } Mode;
 
 typedef struct {

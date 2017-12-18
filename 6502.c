@@ -545,6 +545,28 @@ uint8_t * get_REL()
 	return &memory[(uint16_t) (PC + (int8_t) * get_IMM())];
 }
 
+uint8_t * get_JMP_IND_BUG()
+{
+	uint8_t * addr;
+	uint16_t ptr;
+
+	ptr = get_uint16();
+	if ((ptr & 0xff) == 0xff) {
+		// Bug when crosses a page boundary. When using relative index ($xxff),
+		// instead of using the last byte of the page and the first byte of the
+		// next page, it uses the first byte of the same page. E.g. jmp ($baff)
+		// would use the value at $baff as the LSB, but $ba00 as the high byte
+		// instead of $bb00. This was fixed in the 65C02
+		ptr = memory[ptr] + (memory[ptr & 0xff00] << 8);
+
+	}
+	else {
+		addr = &memory[ptr];
+		memcpy(&ptr, addr, sizeof(ptr));
+	}
+	return &memory[ptr];
+}
+
 
 /* Construction of Tables */
 
@@ -565,6 +587,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	lengths[ZP]		= 2;
 	lengths[ZPX]	= 2;
 	lengths[ZPY]	= 2;
+	lengths[JMP_IND_BUG] = 3;
 	
 	/* Addressing Modes */
 	
@@ -580,6 +603,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	get_ptr[ZP]	= get_ZP;
 	get_ptr[ZPX]	= get_ZPX;
 	get_ptr[ZPY]	= get_ZPY;
+	get_ptr[JMP_IND_BUG] = get_JMP_IND_BUG;
 	
 	/* Instructions */
 	
@@ -691,7 +715,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	instructions[0x69] = (Instruction) {"ADC #", inst_ADC, IMM, 1};
 	instructions[0x6A] = (Instruction) {"ROR A", inst_ROR, ACC, 1};
 	instructions[0x6B] = (Instruction) {"???", inst_NOP, IMPL, 1};
-	instructions[0x6C] = (Instruction) {"JMP ind", inst_JMP, IND, 1};
+	instructions[0x6C] = (Instruction) {"JMP ind", inst_JMP, JMP_IND_BUG, 1};
 	instructions[0x6D] = (Instruction) {"ADC abs", inst_ADC, ABS, 1};
 	instructions[0x6E] = (Instruction) {"ROR abs", inst_ROR, ABS, 1};
 	instructions[0x6F] = (Instruction) {"???", inst_NOP, IMPL, 1};
