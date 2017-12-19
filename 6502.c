@@ -48,6 +48,17 @@ static inline uint8_t * write_ptr()
 	return write_addr = get_ptr[inst.mode]();
 }
 
+/* Branch logic common to all branch instructions */
+
+static inline void take_branch()
+{
+	uint16_t oldPC;
+	oldPC = PC + 2; // PC has already moved to point to the next instruction
+	PC = read_ptr() - memory;
+	if ((PC ^ oldPC) & 0xff00) extra_cycles += 1; // addr crosses page boundary
+	extra_cycles += 1;
+}
+
 /* Instruction Implementations */
 
 static void inst_ADC()
@@ -81,21 +92,21 @@ static void inst_ASL()
 static void inst_BCC()
 {
 	if (!SR.bits.carry) {
-		PC = read_ptr() - memory;
+		take_branch();
 	}
 }
 
 static void inst_BCS()
 {
 	if (SR.bits.carry) {
-		PC = read_ptr() - memory;
+		take_branch();
 	}
 }
 
 static void inst_BEQ()
 {
 	if (SR.bits.zero) {
-		PC = read_ptr() - memory;
+		take_branch();
 	}
 }
 
@@ -110,21 +121,21 @@ static void inst_BIT()
 static void inst_BMI()
 {
 	if (SR.bits.sign) {
-		PC = read_ptr() - memory;
+		take_branch();
 	}
 }
 
 static void inst_BNE()
 {
 	if (!SR.bits.zero) {
-		PC = read_ptr() - memory;
+		take_branch();
 	}
 }
 
 static void inst_BPL()
 {
 	if (!SR.bits.sign) {
-		PC = read_ptr() - memory;
+		take_branch();
 	}
 }
 
@@ -145,14 +156,14 @@ static void inst_BRK()
 static void inst_BVC()
 {
 	if (!SR.bits.overflow) {
-		PC = read_ptr() - memory;
+		take_branch();
 	}
 }
 
 static void inst_BVS()
 {
 	if (SR.bits.overflow) {
-		PC = read_ptr() - memory;
+		take_branch();
 	}
 }
 
@@ -510,12 +521,18 @@ uint8_t * get_ABS()
 
 uint8_t * get_ABSX()
 {
-	return &memory[(uint16_t) (get_uint16() + X)];
+	uint16_t ptr;
+	ptr = (uint16_t)(get_uint16() + X);
+	if ((uint8_t)ptr < X) extra_cycles ++;
+	return &memory[ptr];
 }
 
 uint8_t * get_ABSY()
 {
-	return &memory[(uint16_t) (get_uint16() + Y)];
+	uint16_t ptr;
+	ptr = (uint16_t)(get_uint16() + Y);
+	if ((uint8_t)ptr < Y) extra_cycles ++;
+	return &memory[ptr];
 }
 
 uint8_t * get_IND()
@@ -549,6 +566,7 @@ uint8_t * get_INDY()
 		memcpy(&ptr, &memory[ptr], sizeof(ptr));
 	}
 	ptr += Y;
+	if ((uint8_t)ptr < Y) extra_cycles ++;
 	return &memory[ptr];
 }
 
@@ -892,6 +910,8 @@ void reset_cpu(int _a, int _x, int _y, int _sp, int _sr, int _pc)
 		memcpy(&PC, &memory[-_pc], sizeof(PC));
 	else
 		PC = _pc;
+
+	total_cycles = 0;
 }
 
 int load_rom(char * filename)
@@ -926,14 +946,20 @@ int step_cpu(int verbose) // returns cycle count
 			printf("%02X %02X   ", memory[PC], memory[PC+1]);
 		else
 			printf("%02X      ", memory[PC]);
-		printf("  %-10s                      A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%03d\n", inst.mnemonic, A, X, Y, SR.byte, SP, 0);
+		printf("  %-10s                      A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%3d\n", inst.mnemonic, A, X, Y, SR.byte, SP, (int)((total_cycles * 3) % 341));
 	}
 
 	jumping = 0;
+	extra_cycles = 0;
 	inst.function();
 	if (jumping == 0) PC += lengths[inst.mode];
-	
-	return inst.cycles;
+
+	// 7 cycle instructions (e.g. ROL $nnnn,X) don't have a penalty cycle for
+	// crossing a page boundary.
+	if (inst.cycles == 7) extra_cycles = 0;
+
+	total_cycles += inst.cycles + extra_cycles;
+	return inst.cycles + extra_cycles;
 }
 
 void save_memory(char * filename) { // dump memory for analysis (slows down emulation significantly)

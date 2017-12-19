@@ -16,6 +16,8 @@ uint8_t X;
 uint8_t Y;
 uint16_t PC;
 uint8_t SP; // points to first empty stack location
+uint8_t extra_cycles;
+uint64_t total_cycles;
 
 void * read_addr;
 void * write_addr;
