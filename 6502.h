@@ -70,7 +70,7 @@ void init_tables();
 
 void reset_cpu(int _a, int _x, int _y, int _sp, int _sr, int _pc);
 
-int load_rom(char * filename);
+int load_rom(char * filename, int load_addr);
 
 int step_cpu(int verbose);
 

@@ -925,8 +925,10 @@ void reset_cpu(int _a, int _x, int _y, int _sp, int _sr, int _pc)
 	total_cycles = 0;
 }
 
-int load_rom(char * filename)
-{ // TODO allow more flexible loading
+int load_rom(char * filename, int load_addr)
+{
+	int loaded_size, max_size;
+
 	memset(memory, 0, sizeof(memory)); // clear ram first
 	
 	FILE * fp = fopen(filename, "r");
@@ -935,10 +937,9 @@ int load_rom(char * filename)
 		return -1;
 	}
 	
-	if (!fread(&memory[0xC000], 0x4000, 1, fp)) {
-		printf("Error: ROM file too short.\n");
-		return -1;
-	}
+	max_size = 0x10000 - load_addr;
+	loaded_size = (int)fread(&memory[load_addr], 1, (size_t)max_size, fp);
+	fprintf(stderr, "Loaded $%04x bytes: $%04x - $%04x\n", loaded_size, load_addr, load_addr + loaded_size - 1);
 	
 	fclose(fp);
 	return 0;
