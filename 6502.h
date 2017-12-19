@@ -4,7 +4,7 @@
 #define CPU_FREQ 4e6 // 4Mhz
 #define STEP_DURATION 10e6 // 10ms
 #define ONE_SECOND 1e9
-#define NUM_MODES 13
+#define NUM_MODES 14
 
 #define NMI_VEC 0xFFFA
 #define RST_VEC 0xFFFC
