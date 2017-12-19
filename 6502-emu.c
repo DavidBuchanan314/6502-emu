@@ -19,7 +19,7 @@ void step_delay()
 	nanosleep(&req, &rem);
 }
 
-void run_cpu(long cycle_stop, int verbose, int mem_dump)
+void run_cpu(long cycle_stop, int verbose, int mem_dump, int break_pc)
 {
 	long cycles = 0;
 	int cycles_per_step = (CPU_FREQ / (ONE_SECOND / STEP_DURATION));
@@ -30,6 +30,12 @@ void run_cpu(long cycle_stop, int verbose, int mem_dump)
 			cycles += step_cpu(verbose);
 			if ((cycle_stop > 0) && (total_cycles >= cycle_stop)) goto end;
 			step_uart();
+
+			if (break_pc >= 0 && PC == (uint16_t)break_pc) {
+				fprintf(stderr, "break at %04x\n", break_pc);
+				save_memory(NULL);
+				goto end;
+			}
 		}
 		step_delay(); // remove this for more speed
 	}
@@ -64,7 +70,7 @@ int hextoint(char *str) {
 int main(int argc, char *argv[])
 {
 	int a, x, y, sp, sr, pc, load_addr;
-	int verbose, interactive, mem_dump;
+	int verbose, interactive, mem_dump, break_pc;
 	long cycles;
 	int opt;
 
@@ -73,13 +79,14 @@ int main(int argc, char *argv[])
 	mem_dump = 0;
 	cycles = 0;
 	load_addr = 0xC000;
+	break_pc = -1;
 	a = 0;
 	x = 0;
 	y = 0;
 	sp = 0;
 	sr = 0;
 	pc = -RST_VEC;  // negative implies indirect
-	while ((opt = getopt(argc, argv, "vima:x:y:r:p:s:g:c:l:")) != -1) {
+	while ((opt = getopt(argc, argv, "vima:b:x:y:r:p:s:g:c:l:")) != -1) {
 		switch (opt) {
 		case 'v':
 			verbose = 1;
@@ -89,6 +96,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'm':
 			mem_dump = 1;
+			break;
+		case 'b':
+			break_pc = hextoint(optarg);
 			break;
 		case 'a':
 			a = hextoint(optarg);
@@ -137,7 +147,7 @@ int main(int argc, char *argv[])
 	init_uart();
 	
 	reset_cpu(a, x, y, sp, sr, pc);
-	run_cpu(cycles, verbose, mem_dump);
+	run_cpu(cycles, verbose, mem_dump, break_pc);
 	
 	return EXIT_SUCCESS;
 }
