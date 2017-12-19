@@ -19,16 +19,16 @@ void step_delay()
 	nanosleep(&req, &rem);
 }
 
-void run_cpu(int cycle_stop, int verbose, int mem_dump)
+void run_cpu(long cycle_stop, int verbose, int mem_dump)
 {
-	int cycles = 0;
+	long cycles = 0;
 	int cycles_per_step = (CPU_FREQ / (ONE_SECOND / STEP_DURATION));
 	
 	for (;;) {
 		for (cycles %= cycles_per_step; cycles < cycles_per_step;) {
 			if (mem_dump) save_memory(NULL);
 			cycles += step_cpu(verbose);
-			if ((cycle_stop > 0) && (cycles >= cycle_stop)) goto end;
+			if ((cycle_stop > 0) && (total_cycles >= cycle_stop)) goto end;
 			step_uart();
 		}
 		step_delay(); // remove this for more speed
@@ -64,7 +64,8 @@ int hextoint(char *str) {
 int main(int argc, char *argv[])
 {
 	int a, x, y, sp, sr, pc;
-	int verbose, interactive, mem_dump, cycles;
+	int verbose, interactive, mem_dump;
+	long cycles;
 	int opt;
 
 	verbose = 0;
@@ -108,7 +109,7 @@ int main(int argc, char *argv[])
 			pc = hextoint(optarg);
 			break;
 		case 'c':
-			cycles = atoi(optarg);
+			cycles = atol(optarg);
 			break;
 	    default: /* '?' */
 			fprintf(stderr, "Usage: %s [-v] [-i] [-a HEX] [-x HEX] [-y HEX] [-s HEX] [-p HEX] [-g|-r ADDR] file.rom\nThe first 16k of \"file.rom\" is loaded into the last 16k of memory.\n",
