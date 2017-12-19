@@ -428,6 +428,7 @@ static void inst_SEI()
 static void inst_STA()
 {
 	* write_ptr() = A;
+	extra_cycles = 0; // STA has no addressing modes that use the extra cycle
 }
 
 static void inst_STX()
