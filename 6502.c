@@ -316,7 +316,9 @@ static void inst_LSR()
 
 static void inst_NOP()
 {
-	// nothing
+	// thrown away, just used to compute any extra cycles for the multi-byte
+	// NOP statements
+	read_ptr();
 }
 
 static void inst_ORA()
@@ -483,6 +485,13 @@ static void inst_TYA()
 
 /* Addressing Implementations */
 
+uint8_t * get_IMPL()
+{
+	// dummy implementation; for completeness necessary for cycle counting NOP
+	// instructions
+	return &memory[0];
+}
+
 uint8_t * get_IMM()
 {
 	return &memory[(uint16_t) (PC+1)];
@@ -627,6 +636,7 @@ void init_tables() // this is only done at runtime to improve code readability.
 	get_ptr[ABSX]	= get_ABSX;
 	get_ptr[ABSY]	= get_ABSY;
 	get_ptr[IMM]	= get_IMM;
+	get_ptr[IMPL]	= get_IMPL;
 	get_ptr[IND]	= get_IND;
 	get_ptr[XIND]	= get_XIND;
 	get_ptr[INDY]	= get_INDY;
