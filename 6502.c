@@ -64,7 +64,13 @@ static inline void take_branch()
 static void inst_ADC()
 {
 	uint8_t operand = * read_ptr();
-	int tmp = A + operand + (SR.bits.carry & 1);
+	unsigned int tmp = A + operand + (SR.bits.carry & 1);
+	if (SR.bits.decimal) {
+		tmp = (A & 0x0f) + (operand & 0x0f) + (SR.bits.carry & 1);
+		if (tmp >= 10) tmp = (tmp - 10) | 0x10;
+		tmp += (A & 0xf0) + (operand & 0xf0);
+		if (tmp > 0x9f) tmp += 0x60;
+	}
 	SR.bits.carry = tmp > 0xFF;
 	SR.bits.overflow =  ((A^tmp)&(operand^tmp)&0x80) != 0;
 	A = tmp & 0xFF;
@@ -403,11 +409,21 @@ static void inst_RTS()
 
 static void inst_SBC()
 {
-	uint8_t operand = ~(* read_ptr()); // identical to ACD with the operand inverted
-	int tmp = A + operand + (SR.bits.carry & 1);
-	SR.bits.carry = tmp > 0xFF;
-	SR.bits.overflow =  ((A^tmp)&(operand^tmp)&0x80) != 0;
-	A = tmp & 0xFF;
+	uint8_t operand = * read_ptr();
+	unsigned int tmp, lo, hi;
+	tmp = A - operand - 1 + (SR.bits.carry & 1);
+	SR.bits.overflow = ((A^tmp)&(A^operand)&0x80) != 0;
+	if (SR.bits.decimal) {
+		lo = (A & 0x0f) - (operand & 0x0f) - 1 + SR.bits.carry;
+		hi = (A >> 4) - (operand >> 4);
+		if (lo & 0x10) lo -= 6, hi--;
+		if (hi & 0x10) hi -= 6;
+		A = (hi << 4) | (lo & 0x0f);
+	}
+	else {
+		A = tmp & 0xFF;
+	}
+	SR.bits.carry = tmp < 0x100;
 	N_flag(A);
 	Z_flag(A);
 }
