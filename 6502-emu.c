@@ -67,6 +67,29 @@ int hextoint(char *str) {
 	return val;
 }
 
+void usage(char *argv[]) {
+	fprintf(stderr, "Usage: %s [OPTIONS] FILE\n"
+		"Simulate a NMOS 6502 processor\n"
+		"\nOPTIONS:\n"
+		"\n  CPU Initialization (specify all values in hex; $nn, 0xNN, etc.)\n"
+		"	-a HEX	set A register (default 0)\n"
+		"	-x HEX	set X register (default 0)\n"
+		"	-y HEX	set Y register (default 0)\n"
+		"	-s HEX	set stack pointer (default $ff)\n"
+		"	-p HEX	set processor status register (default 0)\n"
+		"	-r ADDR	set initial run address (default: use value at RST_VEC)\n"
+		"\n  Emulator Control\n"
+		"	-v	print CPU info at every step\n"
+		"	-i	connect stdin/stdout to the emulator\n"
+		"	-b ADDR	stop when PC reaches this address, write memory dump, and exit\n"
+		"	-c NUM	exit after number of cycles (default: never)\n"
+		"	-f	run as fast as possible; no delay loop\n"
+		"\n  Memory Initialization\n"
+		"	-l ADDR	load address for ROM file (default $c000)\n"
+		"	FILE	binary file to load\n"
+		, argv[0]);
+}
+
 int main(int argc, char *argv[])
 {
 	int a, x, y, sp, sr, pc, load_addr;
@@ -87,7 +110,7 @@ int main(int argc, char *argv[])
 	sp = 0;
 	sr = 0;
 	pc = -RST_VEC;  // negative implies indirect
-	while ((opt = getopt(argc, argv, "vimfa:b:x:y:r:p:s:g:c:l:")) != -1) {
+	while ((opt = getopt(argc, argv, "hvimfa:b:x:y:r:p:s:g:c:l:")) != -1) {
 		switch (opt) {
 		case 'v':
 			verbose = 1;
@@ -129,15 +152,16 @@ int main(int argc, char *argv[])
 		case 'l':
 			load_addr = hextoint(optarg);
 			break;
-	    default: /* '?' */
-			fprintf(stderr, "Usage: %s [-v] [-i] [-a HEX] [-x HEX] [-y HEX] [-s HEX] [-p HEX] [-g|-r ADDR] file.rom\nThe first 16k of \"file.rom\" is loaded into the last 16k of memory.\n",
-	               argv[0]);
-	       exit(EXIT_FAILURE);
-	   }
+		case 'h':
+		default: /* '?' */
+			usage(argv);
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	if (optind >= argc) {
-	   fprintf(stderr, "Expected argument after options\n");
+	   fprintf(stderr, "Error: expected binary file to load\n\n");
+	   usage(argv);
 	   exit(EXIT_FAILURE);
 	}
 	if (load_rom(argv[optind], load_addr) != 0) {
