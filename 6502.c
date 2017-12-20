@@ -4,8 +4,6 @@
 
 #include "6502.h"
 
-//#define DEBUG
-
 int lengths[NUM_MODES]; // instruction length table, indexed by addressing mode
 uint8_t * (*get_ptr[NUM_MODES])(); // addressing mode decoder table
 Instruction instructions[0x100]; // instruction data table
