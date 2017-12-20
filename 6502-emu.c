@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
 	a = 0;
 	x = 0;
 	y = 0;
-	sp = 0;
+	sp = 0xFF;
 	sr = 0;
 	pc = -RST_VEC;  // negative implies indirect
 	while ((opt = getopt(argc, argv, "hvimfa:b:x:y:r:p:s:g:c:l:")) != -1) {
