@@ -1,0 +1,23 @@
+# omnivore 0.15.0 extra_metadata=v1
+{
+    "baseline document": "file:///home/rob/src/6502-emu/test/nestest-real-6502.rom", 
+    "comment ranges": [], 
+    "comments": [], 
+    "data ranges": [
+        [0, 4]
+    ], 
+    "document memory map": [], 
+    "document uuid": "efd666e2-2ec3-4bd4-8dca-c976d90e8463", 
+    "last_task_id": "omnivore.byte_edit", 
+    "segment parser": {
+        "py/object": "atrcopy.parsers.Dos33BinSegmentParser",
+        "py/state": {"segments": [{"py/object": "atrcopy.segments.DefaultSegment", "py/state": {"_order_list": null, "_rawdata_bounds": [0, 24576], "can_resize": false, "error": null, "map_width": 40, "memory_map": [], "name": "BIN (Apple ][ executable)", "page_size": -1, "start_addr": 49152, "uuid": "94499547-717c-4759-8bc7-f4f9a070ac53", "verbose_name": null}}, {"py/object": "atrcopy.segments.ObjSegment", "py/state": {"_order_list": null, "_rawdata_bounds": [4, 24576], "can_resize": false, "data_start": 4, "error": null, "map_width": 40, "memory_map": [], "metadata_start": 0, "name": "Incomplete data: expected 60c5, loaded 5ffc", "page_size": -1, "start_addr": 62796, "uuid": "c8c45960-85d4-47c8-9806-4023cc7bbde6", "verbose_name": null}}], "strict": true}
+    }, 
+    "serialized user segments": [], 
+    "task_specific": {
+        "omnivore.byte_edit": {"__traits_version__": "4.7.0.dev502", "antic_color_registers": [4, 30, 68, 213, 15, 202, 148, 70, 0], "antic_font_data": {"blink": true, "char_h": 8, "char_w": 7, "data": {"py/b64": "HCIqOhoCPAAIFCIiPiIiAB4iIh4iIh4AHCICAgIiHAAeIiIiIiIeAD4CAh4CAj4APgICHgICAgA8\nAgICMiI8ACIiIj4iIiIAHAgICAgIHAAgICAgIiIcACISCgYKEiIAAgICAgICfgAiNioqIiIiACIi\nJioyIiIAHCIiIiIiHAAeIiIeAgICABwiIiIqEiwAHiIiHgoSIgAcIgIcICIcAD4ICAgICAgAIiIi\nIiIiHAAiIiIiIhQIACIiKioqNiIAIiIUCBQiIgAiIhQICAgIAD4gEAgEAj4APgYGBgYGPgAAAgQI\nECAAAD4wMDAwMD4ACBQiAAAAAAAAAAAAgID/AAAAAAAAAAAACAgICAgACAAUFBQAAAAAABQUPhQ+\nFBQACDwKHCgeCAAGJhAIBDIwAAQKCgQqEiwACAgIAAAAAAAQCAQEBAgQAAQIEBAQCAQACCocCBwq\nCAAACAg+CAgAAAAAAAAAEBAIAAAAPgAAAAAAAAAAAAAIAAAgEAgEAgAAHCIyKiYiHAAIDAgICAgc\nABwiIBgEAj4APiAQGCAiHAAQGBQSPhAQAD4CHiAgIhwAOAQCHiIiHAA+IBAIBAQEABwiIhwiIhwA\nHCIiPCAQDgAAAAgAAAgAAAAAAAgACAgEEAgEAgQIEAAAAD4APgAAAAQIECAQCAQAHCIQCAgACAAc\nIio6GgI8AAgUIiI+IiIAHiIiHiIiHgAcIgICAiIcAB4iIiIiIh4APgICHgICPgA+AgIeAgICADwC\nAgIyIjwAIiIiPiIiIgAcCAgICAgcACAgICAiIhwAIhIKBgoSIgACAgICAgJ+ACI2KioiIiIAIiIm\nKjIiIgAcIiIiIiIcAB4iIh4CAgIAHCIiIioSLAAeIiIeChIiABwiAhwgIhwAPggICAgICAAiIiIi\nIiIcACIiIiIiFAgAIiIqKio2IgAiIhQIFCIiACIiFAgICAgAPiAQCAQCPgA+BgYGBgY+AAACBAgQ\nIAAAPjAwMDAwPgAIFCIAAAAAAAAAAACAgP8ABAgQAAAAAAAAABwgPCI8AAICGiYiIh4AAAAcIgIi\nHAAgICwyIiI8AAAAHCI+AjwAGCQEDgQEBAAAACwyIjwgHgICGiYiIiIACAAMCAgIHAAgACAgICAi\nHAICEgoGChIADAgICAgIHAAAABYqKioqAAAAGiYiIiIAAAAcIiIiHAAAAB4iIh4CAgAAPCIiPCAg\nAAAaJgICAgAAADwCHCAeAAQEHgQEJBgAAAAiIiIyLAAAACIiFBQIAAAAKioqKhQAAAAiFAgUIgAA\nACIiIjwgHgAAPhAIBD4ACAQEAgQECAAICAgICAgIAAgQECAQEAgAACYZAAAAAAAAKhQqFCoAAA==\n"}, "name": "7x8 Apple ][ Default Font"}, "bitmap_renderer": 0, "color_standard": 0, "diff highlight": true, "disassembler": 3, "font_mapping": 1, "font_renderer": 7, "memory_map": 3, "mime_prefix": "application/vnd.apple2", "name": "Apple ][", "page_renderer": 0, "segment view params": {}}
+    }, 
+    "user style 1": [
+        [0, 4]
+    ]
+}
