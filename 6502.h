@@ -4,7 +4,7 @@
 #define CPU_FREQ 4e6 // 4Mhz
 #define STEP_DURATION 10e6 // 10ms
 #define ONE_SECOND 1e9
-#define NUM_MODES 13
+#define NUM_MODES 14
 
 #define NMI_VEC 0xFFFA
 #define RST_VEC 0xFFFC
@@ -16,6 +16,8 @@ uint8_t X;
 uint8_t Y;
 uint16_t PC;
 uint8_t SP; // points to first empty stack location
+uint8_t extra_cycles;
+uint64_t total_cycles;
 
 void * read_addr;
 void * write_addr;
@@ -51,7 +53,8 @@ typedef enum {
 	REL,
 	ZP,
 	ZPX,
-	ZPY
+	ZPY,
+	JMP_IND_BUG,
 } Mode;
 
 typedef struct {
@@ -65,8 +68,10 @@ Instruction instructions[0x100];
 
 void init_tables();
 
-void reset_cpu();
+void reset_cpu(int _a, int _x, int _y, int _sp, int _sr, int _pc);
 
-int load_rom(char * filename);
+int load_rom(char * filename, int load_addr);
 
-int step_cpu();
+int step_cpu(int verbose);
+
+void save_memory(char * filename);
