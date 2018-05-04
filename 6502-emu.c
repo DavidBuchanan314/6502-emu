@@ -19,21 +19,21 @@ void step_delay()
 	nanosleep(&req, &rem);
 }
 
-void run_cpu(long cycle_stop, int verbose, int mem_dump, int break_pc, int fast)
+void run_cpu(CPU * cpu, long cycle_stop, int verbose, int mem_dump, int break_pc, int fast)
 {
 	long cycles = 0;
 	int cycles_per_step = (CPU_FREQ / (ONE_SECOND / STEP_DURATION));
 	
 	for (;;) {
 		for (cycles %= cycles_per_step; cycles < cycles_per_step;) {
-			if (mem_dump) save_memory(NULL);
-			cycles += step_cpu(verbose);
-			if ((cycle_stop > 0) && (total_cycles >= cycle_stop)) goto end;
+			if (mem_dump) save_memory(cpu, NULL);
+			cycles += step_cpu(cpu, verbose);
+			if ((cycle_stop > 0) && (cpu->total_cycles >= cycle_stop)) goto end;
 			step_uart();
 
-			if (break_pc >= 0 && PC == (uint16_t)break_pc) {
+			if (break_pc >= 0 && cpu->PC == (uint16_t)break_pc) {
 				fprintf(stderr, "break at %04x\n", break_pc);
-				save_memory(NULL);
+				save_memory(cpu, NULL);
 				goto end;
 			}
 		}
@@ -96,6 +96,7 @@ int main(int argc, char *argv[])
 	int verbose, interactive, mem_dump, break_pc, fast;
 	long cycles;
 	int opt;
+	CPU *cpu;
 
 	verbose = 0;
 	interactive = 0;
@@ -164,7 +165,11 @@ int main(int argc, char *argv[])
 	   usage(argv);
 	   exit(EXIT_FAILURE);
 	}
-	if (load_rom(argv[optind], load_addr) != 0) {
+
+	cpu = create_cpu();
+	init_uart(cpu);
+
+	if (load_rom(cpu, argv[optind], load_addr) != 0) {
 		printf("Error loading \"%s\".\n", argv[optind]);
 		return EXIT_FAILURE;
 	}
@@ -172,10 +177,9 @@ int main(int argc, char *argv[])
 	if (interactive) raw_stdin(); // allow individual keystrokes to be detected
 	
 	init_tables();
-	init_uart();
 	
-	reset_cpu(a, x, y, sp, sr, pc);
-	run_cpu(cycles, verbose, mem_dump, break_pc, fast);
+	reset_cpu(cpu, a, x, y, sp, sr, pc);
+	run_cpu(cpu, cycles, verbose, mem_dump, break_pc, fast);
 	
 	return EXIT_SUCCESS;
 }

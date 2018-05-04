@@ -10,18 +10,6 @@
 #define RST_VEC 0xFFFC
 #define IRQ_VEC 0xFFFE
 
-uint8_t memory[1<<16];
-uint8_t A;
-uint8_t X;
-uint8_t Y;
-uint16_t PC;
-uint8_t SP; // points to first empty stack location
-uint8_t extra_cycles;
-uint64_t total_cycles;
-
-void * read_addr;
-void * write_addr;
-
 struct StatusBits{
 	bool carry:1; // bit 0
 	bool zero:1;
@@ -38,7 +26,21 @@ union StatusReg { // this means we can access the status register as a byte, or 
 	uint8_t byte;
 };
 
-union StatusReg SR;
+typedef struct {
+	uint8_t memory[1<<16];
+	uint8_t A;
+	uint8_t X;
+	uint8_t Y;
+	uint16_t PC;
+	uint8_t SP; // points to first empty stack location
+	uint8_t extra_cycles;
+	uint64_t total_cycles;
+	union StatusReg SR;
+
+	void * read_addr;
+	void * write_addr;
+	int jumping; // used to check that we don't need to increment the PC after a jump
+} CPU;
 
 typedef enum {
 	ACC,
@@ -59,7 +61,7 @@ typedef enum {
 
 typedef struct {
 	char * mnemonic;
-	void (*function)();
+	void (*function)(CPU *);
 	Mode mode;
 	uint8_t cycles;
 } Instruction;
@@ -68,10 +70,12 @@ Instruction instructions[0x100];
 
 void init_tables();
 
-void reset_cpu(int _a, int _x, int _y, int _sp, int _sr, int _pc);
+void reset_cpu(CPU *cpu, int _a, int _x, int _y, int _sp, int _sr, int _pc);
 
-int load_rom(char * filename, int load_addr);
+int load_rom(CPU *cpu, char * filename, int load_addr);
 
-int step_cpu(int verbose);
+int step_cpu(CPU *cpu, int verbose);
 
-void save_memory(char * filename);
+void save_memory(CPU *cpu, char * filename);
+
+CPU * create_cpu();

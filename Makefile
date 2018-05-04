@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Wpedantic -Ofast -std=gnu99
+CFLAGS = -Wall -Wpedantic -g -std=gnu99
 LDFLAGS = -Ofast
 
 OBJ := 6502-emu.o 6502.o 6850.o

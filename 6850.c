@@ -8,8 +8,8 @@
 
 int n;
 
-void init_uart() {
-	memory[DATA_ADDR] = 0;
+void init_uart(CPU *cpu) {
+	cpu->memory[DATA_ADDR] = 0;
 	
 	uart_SR.byte = 0;
 	uart_SR.bits.TDRE = 1; // we are always ready to output data
@@ -26,15 +26,15 @@ int stdin_ready() {
 	return poll(&fds, 1, 0) == 1; // timeout = 0
 }
 
-void step_uart() {
-	if (write_addr == &memory[DATA_ADDR]) {
-		putchar(memory[DATA_ADDR]);
-		if (memory[DATA_ADDR] == '\b') printf(" \b");
+void step_uart(CPU *cpu) {
+	if (cpu->write_addr == &cpu->memory[DATA_ADDR]) {
+		putchar(cpu->memory[DATA_ADDR]);
+		if (cpu->memory[DATA_ADDR] == '\b') printf(" \b");
 		fflush(stdout);
-		write_addr = NULL;
-	} else if (read_addr == &memory[DATA_ADDR]) {
+		cpu->write_addr = NULL;
+	} else if (cpu->read_addr == &cpu->memory[DATA_ADDR]) {
 		uart_SR.bits.RDRF = 0;
-		read_addr = NULL;
+		cpu->read_addr = NULL;
 	}
 	
 	/* update input register if empty */
@@ -54,6 +54,6 @@ void step_uart() {
 		}
 	}
 	
-	memory[DATA_ADDR] = incoming_char;
-	memory[CTRL_ADDR] = uart_SR.byte;
+	cpu->memory[DATA_ADDR] = incoming_char;
+	cpu->memory[CTRL_ADDR] = uart_SR.byte;
 }
