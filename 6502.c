@@ -4,6 +4,16 @@
 
 #include "6502.h"
 
+uint8_t memory[1<<16];
+uint8_t A;
+uint8_t X;
+uint8_t Y;
+uint16_t PC;
+uint8_t SP;
+uint8_t extra_cycles;
+uint64_t total_cycles;
+union StatusReg SR;
+
 int lengths[NUM_MODES]; // instruction length table, indexed by addressing mode
 uint8_t * (*get_ptr[NUM_MODES])(); // addressing mode decoder table
 Instruction instructions[0x100]; // instruction data table
