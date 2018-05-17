@@ -19,8 +19,8 @@ extern uint8_t SP; // points to first empty stack location
 extern uint8_t extra_cycles;
 extern uint64_t total_cycles;
 
-void * read_addr;
-void * write_addr;
+extern void * read_addr;
+extern void * write_addr;
 
 struct StatusBits{
 	bool carry:1; // bit 0

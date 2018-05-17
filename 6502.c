@@ -19,6 +19,8 @@ uint8_t * (*get_ptr[NUM_MODES])(); // addressing mode decoder table
 Instruction instructions[0x100]; // instruction data table
 Instruction inst; // the current instruction (used for convenience)
 int jumping; // used to check that we don't need to increment the PC after a jump
+void * read_addr;
+void * write_addr;
 
 /* Flag Checks */
 
