@@ -10,14 +10,14 @@
 #define RST_VEC 0xFFFC
 #define IRQ_VEC 0xFFFE
 
-uint8_t memory[1<<16];
-uint8_t A;
-uint8_t X;
-uint8_t Y;
-uint16_t PC;
-uint8_t SP; // points to first empty stack location
-uint8_t extra_cycles;
-uint64_t total_cycles;
+extern uint8_t memory[1<<16];
+extern uint8_t A;
+extern uint8_t X;
+extern uint8_t Y;
+extern uint16_t PC;
+extern uint8_t SP; // points to first empty stack location
+extern uint8_t extra_cycles;
+extern uint64_t total_cycles;
 
 void * read_addr;
 void * write_addr;
@@ -38,7 +38,7 @@ union StatusReg { // this means we can access the status register as a byte, or 
 	uint8_t byte;
 };
 
-union StatusReg SR;
+extern union StatusReg SR;
 
 typedef enum {
 	ACC,
@@ -64,7 +64,7 @@ typedef struct {
 	uint8_t cycles;
 } Instruction;
 
-Instruction instructions[0x100];
+extern Instruction instructions[0x100];
 
 void init_tables();
 
