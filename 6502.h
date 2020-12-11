@@ -19,8 +19,8 @@ extern uint8_t SP; // points to first empty stack location
 extern uint8_t extra_cycles;
 extern uint64_t total_cycles;
 
-extern void * read_addr;
-extern void * write_addr;
+extern void *read_addr;
+extern void *write_addr;
 
 struct StatusBits{
 	bool carry:1; // bit 0
@@ -58,20 +58,20 @@ typedef enum {
 } Mode;
 
 typedef struct {
-	char * mnemonic;
+	char *mnemonic;
 	void (*function)();
 	Mode mode;
 	uint8_t cycles;
 } Instruction;
 
-extern Instruction instructions[0x100];
+//extern Instruction instructions[0x100];
 
-void init_tables();
+//void init_tables();
 
 void reset_cpu(int _a, int _x, int _y, int _sp, int _sr, int _pc);
 
-int load_rom(char * filename, int load_addr);
+int load_rom(char *filename, int load_addr);
 
 int step_cpu(int verbose);
 
-void save_memory(char * filename);
+void save_memory(char *filename);

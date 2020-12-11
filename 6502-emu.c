@@ -160,9 +160,9 @@ int main(int argc, char *argv[])
 	}
 
 	if (optind >= argc) {
-	   fprintf(stderr, "Error: expected binary file to load\n\n");
-	   usage(argv);
-	   exit(EXIT_FAILURE);
+		fprintf(stderr, "Error: expected binary file to load\n\n");
+		usage(argv);
+		exit(EXIT_FAILURE);
 	}
 	if (load_rom(argv[optind], load_addr) != 0) {
 		printf("Error loading \"%s\".\n", argv[optind]);
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
 	
 	if (interactive) raw_stdin(); // allow individual keystrokes to be detected
 	
-	init_tables();
+	//init_tables();
 	init_uart();
 	
 	reset_cpu(a, x, y, sp, sr, pc);

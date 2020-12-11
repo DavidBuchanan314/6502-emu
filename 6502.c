@@ -14,13 +14,379 @@ uint8_t extra_cycles;
 uint64_t total_cycles;
 union StatusReg SR;
 
-int lengths[NUM_MODES]; // instruction length table, indexed by addressing mode
-uint8_t * (*get_ptr[NUM_MODES])(); // addressing mode decoder table
-Instruction instructions[0x100]; // instruction data table
+static uint8_t *get_ACC(void);
+static uint8_t *get_ABS(void);
+static uint8_t *get_ABSX(void);
+static uint8_t *get_ABSY(void);
+static uint8_t *get_IMM(void);
+static uint8_t *get_IMPL(void);
+static uint8_t *get_IND(void);
+static uint8_t *get_XIND(void);
+static uint8_t *get_INDY(void);
+static uint8_t *get_REL(void);
+static uint8_t *get_ZP(void);
+static uint8_t *get_ZPX(void);
+static uint8_t *get_ZPY(void);
+static uint8_t *get_JMP_IND_BUG(void);
+
+static void inst_ADC(void);
+static void inst_AND(void);
+static void inst_ASL(void);
+static void inst_BCC(void);
+static void inst_BCS(void);
+static void inst_BEQ(void);
+static void inst_BIT(void);
+static void inst_BMI(void);
+static void inst_BNE(void);
+static void inst_BPL(void);
+static void inst_BRK(void);
+static void inst_BVC(void);
+static void inst_BVS(void);
+static void inst_CLC(void);
+static void inst_CLD(void);
+static void inst_CLI(void);
+static void inst_CLV(void);
+static void inst_CMP(void);
+static void inst_CPX(void);
+static void inst_CPY(void);
+static void inst_DEC(void);
+static void inst_DEX(void);
+static void inst_DEY(void);
+static void inst_EOR(void);
+static void inst_INC(void);
+static void inst_INX(void);
+static void inst_INY(void);
+static void inst_JMP(void);
+static void inst_JSR(void);
+static void inst_LDA(void);
+static void inst_LDX(void);
+static void inst_LDY(void);
+static void inst_LSR(void);
+static void inst_NOP(void);
+static void inst_ORA(void);
+static void inst_PHA(void);
+static void inst_PHP(void);
+static void inst_PLA(void);
+static void inst_PLP(void);
+static void inst_ROL(void);
+static void inst_ROR(void);
+static void inst_RTI(void);
+static void inst_RTS(void);
+static void inst_SBC(void);
+static void inst_SEC(void);
+static void inst_SED(void);
+static void inst_SEI(void);
+static void inst_STA(void);
+static void inst_STX(void);
+static void inst_STY(void);
+static void inst_TAX(void);
+static void inst_TAY(void);
+static void inst_TSX(void);
+static void inst_TXA(void);
+static void inst_TXS(void);
+static void inst_TYA(void);
+
+
+// instruction length table, indexed by addressing mode
+static int const lengths[NUM_MODES] = {
+	[ACC]         = 1,
+	[ABS]         = 3,
+	[ABSX]        = 3,
+	[ABSY]        = 3,
+	[IMM]         = 2,
+	[IMPL]        = 1,
+	[IND]         = 3,
+	[XIND]        = 2,
+	[INDY]        = 2,
+	[REL]         = 2,
+	[ZP]          = 2,
+	[ZPX]         = 2,
+	[ZPY]         = 2,
+	[JMP_IND_BUG] = 3
+};
+
+// addressing mode decoder table
+static uint8_t *(*const get_ptr[NUM_MODES])() = {
+	[ACC]         = get_ACC,
+	[ABS]         = get_ABS,
+	[ABSX]        = get_ABSX,
+	[ABSY]        = get_ABSY,
+	[IMM]         = get_IMM,
+	[IMPL]        = get_IMPL,
+	[IND]         = get_IND,
+	[XIND]        = get_XIND,
+	[INDY]        = get_INDY,
+	[REL]         = get_REL,
+	[ZP]          = get_ZP,
+	[ZPX]         = get_ZPX,
+	[ZPY]         = get_ZPY,
+	[JMP_IND_BUG] = get_JMP_IND_BUG
+};
+
+// instruction data table
+static const Instruction instructions[0x100] = {
+	[0x00] = {"BRK impl", inst_BRK, IMPL, 7},
+	[0x01] = {"ORA X,ind", inst_ORA, XIND, 6},
+	[0x02] = {"???", inst_NOP, IMPL, 2},
+	[0x03] = {"???", inst_NOP, IMPL, 8},
+	[0x04] = {"???", inst_NOP, ZP, 3},
+	[0x05] = {"ORA zpg", inst_ORA, ZP, 3},
+	[0x06] = {"ASL zpg", inst_ASL, ZP, 5},
+	[0x07] = {"???", inst_NOP, IMPL, 5},
+	[0x08] = {"PHP impl", inst_PHP, IMPL, 3},
+	[0x09] = {"ORA #", inst_ORA, IMM, 2},
+	[0x0A] = {"ASL A", inst_ASL, ACC, 2},
+	[0x0B] = {"???", inst_NOP, IMPL, 2},
+	[0x0C] = {"???", inst_NOP, ABS, 4},
+	[0x0D] = {"ORA abs", inst_ORA, ABS, 4},
+	[0x0E] = {"ASL abs", inst_ASL, ABS, 6},
+	[0x0F] = {"???", inst_NOP, IMPL, 6},
+	[0x10] = {"BPL rel", inst_BPL, REL, 2},
+	[0x11] = {"ORA ind,Y", inst_ORA, INDY, 5},
+	[0x12] = {"???", inst_NOP, IMPL, 2},
+	[0x13] = {"???", inst_NOP, IMPL, 8},
+	[0x14] = {"???", inst_NOP, ZP, 4},
+	[0x15] = {"ORA zpg,X", inst_ORA, ZPX, 4},
+	[0x16] = {"ASL zpg,X", inst_ASL, ZPX, 6},
+	[0x17] = {"???", inst_NOP, IMPL, 6},
+	[0x18] = {"CLC impl", inst_CLC, IMPL, 2},
+	[0x19] = {"ORA abs,Y", inst_ORA, ABSY, 4},
+	[0x1A] = {"???", inst_NOP, IMPL, 2},
+	[0x1B] = {"???", inst_NOP, IMPL, 7},
+	[0x1C] = {"???", inst_NOP, ABSX, 4},
+	[0x1D] = {"ORA abs,X", inst_ORA, ABSX, 4},
+	[0x1E] = {"ASL abs,X", inst_ASL, ABSX, 7},
+	[0x1F] = {"???", inst_NOP, IMPL, 7},
+	[0x20] = {"JSR abs", inst_JSR, ABS, 6},
+	[0x21] = {"AND X,ind", inst_AND, XIND, 6},
+	[0x22] = {"???", inst_NOP, IMPL, 2},
+	[0x23] = {"???", inst_NOP, IMPL, 8},
+	[0x24] = {"BIT zpg", inst_BIT, ZP, 3},
+	[0x25] = {"AND zpg", inst_AND, ZP, 3},
+	[0x26] = {"ROL zpg", inst_ROL, ZP, 5},
+	[0x27] = {"???", inst_NOP, IMPL, 5},
+	[0x28] = {"PLP impl", inst_PLP, IMPL, 4},
+	[0x29] = {"AND #", inst_AND, IMM, 2},
+	[0x2A] = {"ROL A", inst_ROL, ACC, 2},
+	[0x2B] = {"???", inst_NOP, IMPL, 2},
+	[0x2C] = {"BIT abs", inst_BIT, ABS, 4},
+	[0x2D] = {"AND abs", inst_AND, ABS, 4},
+	[0x2E] = {"ROL abs", inst_ROL, ABS, 6},
+	[0x2F] = {"???", inst_NOP, IMPL, 6},
+	[0x30] = {"BMI rel", inst_BMI, REL, 2},
+	[0x31] = {"AND ind,Y", inst_AND, INDY, 5},
+	[0x32] = {"???", inst_NOP, IMPL, 2},
+	[0x33] = {"???", inst_NOP, IMPL, 8},
+	[0x34] = {"???", inst_NOP, ZP, 4},
+	[0x35] = {"AND zpg,X", inst_AND, ZPX, 4},
+	[0x36] = {"ROL zpg,X", inst_ROL, ZPX, 6},
+	[0x37] = {"???", inst_NOP, IMPL, 6},
+	[0x38] = {"SEC impl", inst_SEC, IMPL, 2},
+	[0x39] = {"AND abs,Y", inst_AND, ABSY, 4},
+	[0x3A] = {"???", inst_NOP, IMPL, 2},
+	[0x3B] = {"???", inst_NOP, IMPL, 7},
+	[0x3C] = {"???", inst_NOP, ABSX, 4},
+	[0x3D] = {"AND abs,X", inst_AND, ABSX, 4},
+	[0x3E] = {"ROL abs,X", inst_ROL, ABSX, 7},
+	[0x3F] = {"???", inst_NOP, IMPL, 7},
+	[0x40] = {"RTI impl", inst_RTI, IMPL, 6},
+	[0x41] = {"EOR X,ind", inst_EOR, XIND, 6},
+	[0x42] = {"???", inst_NOP, IMPL, 2},
+	[0x43] = {"???", inst_NOP, IMPL, 8},
+	[0x44] = {"???", inst_NOP, ZP, 3},
+	[0x45] = {"EOR zpg", inst_EOR, ZP, 3},
+	[0x46] = {"LSR zpg", inst_LSR, ZP, 5},
+	[0x47] = {"???", inst_NOP, IMPL, 5},
+	[0x48] = {"PHA impl", inst_PHA, IMPL, 3},
+	[0x49] = {"EOR #", inst_EOR, IMM, 2},
+	[0x4A] = {"LSR A", inst_LSR, ACC, 2},
+	[0x4B] = {"???", inst_NOP, IMPL, 2},
+	[0x4C] = {"JMP abs", inst_JMP, ABS, 3},
+	[0x4D] = {"EOR abs", inst_EOR, ABS, 4},
+	[0x4E] = {"LSR abs", inst_LSR, ABS, 6},
+	[0x4F] = {"???", inst_NOP, IMPL, 6},
+	[0x50] = {"BVC rel", inst_BVC, REL, 2},
+	[0x51] = {"EOR ind,Y", inst_EOR, INDY, 5},
+	[0x52] = {"???", inst_NOP, IMPL, 2},
+	[0x53] = {"???", inst_NOP, IMPL, 8},
+	[0x54] = {"???", inst_NOP, ZP, 4},
+	[0x55] = {"EOR zpg,X", inst_EOR, ZPX, 4},
+	[0x56] = {"LSR zpg,X", inst_LSR, ZPX, 6},
+	[0x57] = {"???", inst_NOP, IMPL, 6},
+	[0x58] = {"CLI impl", inst_CLI, IMPL, 2},
+	[0x59] = {"EOR abs,Y", inst_EOR, ABSY, 4},
+	[0x5A] = {"???", inst_NOP, IMPL, 2},
+	[0x5B] = {"???", inst_NOP, IMPL, 7},
+	[0x5C] = {"???", inst_NOP, ABSX, 4},
+	[0x5D] = {"EOR abs,X", inst_EOR, ABSX, 4},
+	[0x5E] = {"LSR abs,X", inst_LSR, ABSX, 7},
+	[0x5F] = {"???", inst_NOP, IMPL, 7},
+	[0x60] = {"RTS impl", inst_RTS, IMPL, 6},
+	[0x61] = {"ADC X,ind", inst_ADC, XIND, 6},
+	[0x62] = {"???", inst_NOP, IMPL, 2},
+	[0x63] = {"???", inst_NOP, IMPL, 8},
+	[0x64] = {"???", inst_NOP, ZP, 3},
+	[0x65] = {"ADC zpg", inst_ADC, ZP, 3},
+	[0x66] = {"ROR zpg", inst_ROR, ZP, 5},
+	[0x67] = {"???", inst_NOP, IMPL, 5},
+	[0x68] = {"PLA impl", inst_PLA, IMPL, 4},
+	[0x69] = {"ADC #", inst_ADC, IMM, 2},
+	[0x6A] = {"ROR A", inst_ROR, ACC, 2},
+	[0x6B] = {"???", inst_NOP, IMPL, 2},
+	[0x6C] = {"JMP ind", inst_JMP, JMP_IND_BUG, 5},
+	[0x6D] = {"ADC abs", inst_ADC, ABS, 4},
+	[0x6E] = {"ROR abs", inst_ROR, ABS, 6},
+	[0x6F] = {"???", inst_NOP, IMPL, 6},
+	[0x70] = {"BVS rel", inst_BVS, REL, 2},
+	[0x71] = {"ADC ind,Y", inst_ADC, INDY, 5},
+	[0x72] = {"???", inst_NOP, IMPL, 2},
+	[0x73] = {"???", inst_NOP, IMPL, 8},
+	[0x74] = {"???", inst_NOP, ZP, 4},
+	[0x75] = {"ADC zpg,X", inst_ADC, ZPX, 4},
+	[0x76] = {"ROR zpg,X", inst_ROR, ZPX, 6},
+	[0x77] = {"???", inst_NOP, IMPL, 6},
+	[0x78] = {"SEI impl", inst_SEI, IMPL, 2},
+	[0x79] = {"ADC abs,Y", inst_ADC, ABSY, 4},
+	[0x7A] = {"???", inst_NOP, IMPL, 2},
+	[0x7B] = {"???", inst_NOP, IMPL, 7},
+	[0x7C] = {"???", inst_NOP, ABSX, 4},
+	[0x7D] = {"ADC abs,X", inst_ADC, ABSX, 4},
+	[0x7E] = {"ROR abs,X", inst_ROR, ABSX, 7},
+	[0x7F] = {"???", inst_NOP, IMPL, 7},
+	[0x80] = {"???", inst_NOP, IMM, 2},
+	[0x81] = {"STA X,ind", inst_STA, XIND, 6},
+	[0x82] = {"???", inst_NOP, IMPL, 2},
+	[0x83] = {"???", inst_NOP, IMPL, 6},
+	[0x84] = {"STY zpg", inst_STY, ZP, 3},
+	[0x85] = {"STA zpg", inst_STA, ZP, 3},
+	[0x86] = {"STX zpg", inst_STX, ZP, 3},
+	[0x87] = {"???", inst_NOP, IMPL, 3},
+	[0x88] = {"DEY impl", inst_DEY, IMPL, 2},
+	[0x89] = {"???", inst_NOP, IMPL, 2},
+	[0x8A] = {"TXA impl", inst_TXA, IMPL, 2},
+	[0x8B] = {"???", inst_NOP, IMPL, 2},
+	[0x8C] = {"STY abs", inst_STY, ABS, 4},
+	[0x8D] = {"STA abs", inst_STA, ABS, 4},
+	[0x8E] = {"STX abs", inst_STX, ABS, 4},
+	[0x8F] = {"???", inst_NOP, IMPL, 4},
+	[0x90] = {"BCC rel", inst_BCC, REL, 2},
+	[0x91] = {"STA ind,Y", inst_STA, INDY, 6},
+	[0x92] = {"???", inst_NOP, IMPL, 2},
+	[0x93] = {"???", inst_NOP, IMPL, 6},
+	[0x94] = {"STY zpg,X", inst_STY, ZPX, 4},
+	[0x95] = {"STA zpg,X", inst_STA, ZPX, 4},
+	[0x96] = {"STX zpg,Y", inst_STX, ZPY, 4},
+	[0x97] = {"???", inst_NOP, IMPL, 4},
+	[0x98] = {"TYA impl", inst_TYA, IMPL, 2},
+	[0x99] = {"STA abs,Y", inst_STA, ABSY, 5},
+	[0x9A] = {"TXS impl", inst_TXS, IMPL, 2},
+	[0x9B] = {"???", inst_NOP, IMPL, 5},
+	[0x9C] = {"???", inst_NOP, IMPL, 5},
+	[0x9D] = {"STA abs,X", inst_STA, ABSX, 5},
+	[0x9E] = {"???", inst_NOP, IMPL, 5},
+	[0x9F] = {"???", inst_NOP, IMPL, 5},
+	[0xA0] = {"LDY #", inst_LDY, IMM, 2},
+	[0xA1] = {"LDA X,ind", inst_LDA, XIND, 6},
+	[0xA2] = {"LDX #", inst_LDX, IMM, 2},
+	[0xA3] = {"???", inst_NOP, IMPL, 6},
+	[0xA4] = {"LDY zpg", inst_LDY, ZP, 3},
+	[0xA5] = {"LDA zpg", inst_LDA, ZP, 3},
+	[0xA6] = {"LDX zpg", inst_LDX, ZP, 3},
+	[0xA7] = {"???", inst_NOP, IMPL, 3},
+	[0xA8] = {"TAY impl", inst_TAY, IMPL, 2},
+	[0xA9] = {"LDA #", inst_LDA, IMM, 2},
+	[0xAA] = {"TAX impl", inst_TAX, IMPL, 2},
+	[0xAB] = {"???", inst_NOP, IMPL, 2},
+	[0xAC] = {"LDY abs", inst_LDY, ABS, 4},
+	[0xAD] = {"LDA abs", inst_LDA, ABS, 4},
+	[0xAE] = {"LDX abs", inst_LDX, ABS, 4},
+	[0xAF] = {"???", inst_NOP, IMPL, 4},
+	[0xB0] = {"BCS rel", inst_BCS, REL, 2},
+	[0xB1] = {"LDA ind,Y", inst_LDA, INDY, 5},
+	[0xB2] = {"???", inst_NOP, IMPL, 2},
+	[0xB3] = {"???", inst_NOP, IMPL, 5},
+	[0xB4] = {"LDY zpg,X", inst_LDY, ZPX, 4},
+	[0xB5] = {"LDA zpg,X", inst_LDA, ZPX, 4},
+	[0xB6] = {"LDX zpg,Y", inst_LDX, ZPY, 4},
+	[0xB7] = {"???", inst_NOP, IMPL, 4},
+	[0xB8] = {"CLV impl", inst_CLV, IMPL, 2},
+	[0xB9] = {"LDA abs,Y", inst_LDA, ABSY, 4},
+	[0xBA] = {"TSX impl", inst_TSX, IMPL, 2},
+	[0xBB] = {"???", inst_NOP, IMPL, 4},
+	[0xBC] = {"LDY abs,X", inst_LDY, ABSX, 4},
+	[0xBD] = {"LDA abs,X", inst_LDA, ABSX, 4},
+	[0xBE] = {"LDX abs,Y", inst_LDX, ABSY, 4},
+	[0xBF] = {"???", inst_NOP, IMPL, 4},
+	[0xC0] = {"CPY #", inst_CPY, IMM, 2},
+	[0xC1] = {"CMP X,ind", inst_CMP, XIND, 6},
+	[0xC2] = {"???", inst_NOP, IMPL, 2},
+	[0xC3] = {"???", inst_NOP, IMPL, 8},
+	[0xC4] = {"CPY zpg", inst_CPY, ZP, 3},
+	[0xC5] = {"CMP zpg", inst_CMP, ZP, 3},
+	[0xC6] = {"DEC zpg", inst_DEC, ZP, 5},
+	[0xC7] = {"???", inst_NOP, IMPL, 5},
+	[0xC8] = {"INY impl", inst_INY, IMPL, 2},
+	[0xC9] = {"CMP #", inst_CMP, IMM, 2},
+	[0xCA] = {"DEX impl", inst_DEX, IMPL, 2},
+	[0xCB] = {"???", inst_NOP, IMPL, 2},
+	[0xCC] = {"CPY abs", inst_CPY, ABS, 4},
+	[0xCD] = {"CMP abs", inst_CMP, ABS, 4},
+	[0xCE] = {"DEC abs", inst_DEC, ABS, 6},
+	[0xCF] = {"???", inst_NOP, IMPL, 6},
+	[0xD0] = {"BNE rel", inst_BNE, REL, 2},
+	[0xD1] = {"CMP ind,Y", inst_CMP, INDY, 5},
+	[0xD2] = {"???", inst_NOP, IMPL, 2},
+	[0xD3] = {"???", inst_NOP, IMPL, 8},
+	[0xD4] = {"???", inst_NOP, ZP, 4},
+	[0xD5] = {"CMP zpg,X", inst_CMP, ZPX, 4},
+	[0xD6] = {"DEC zpg,X", inst_DEC, ZPX, 6},
+	[0xD7] = {"???", inst_NOP, IMPL, 6},
+	[0xD8] = {"CLD impl", inst_CLD, IMPL, 2},
+	[0xD9] = {"CMP abs,Y", inst_CMP, ABSY, 4},
+	[0xDA] = {"???", inst_NOP, IMPL, 2},
+	[0xDB] = {"???", inst_NOP, IMPL, 7},
+	[0xDC] = {"???", inst_NOP, ABSX, 4},
+	[0xDD] = {"CMP abs,X", inst_CMP, ABSX, 4},
+	[0xDE] = {"DEC abs,X", inst_DEC, ABSX, 7},
+	[0xDF] = {"???", inst_NOP, IMPL, 7},
+	[0xE0] = {"CPX #", inst_CPX, IMM, 2},
+	[0xE1] = {"SBC X,ind", inst_SBC, XIND, 6},
+	[0xE2] = {"???", inst_NOP, IMPL, 2},
+	[0xE3] = {"???", inst_NOP, IMPL, 8},
+	[0xE4] = {"CPX zpg", inst_CPX, ZP, 3},
+	[0xE5] = {"SBC zpg", inst_SBC, ZP, 3},
+	[0xE6] = {"INC zpg", inst_INC, ZP, 5},
+	[0xE7] = {"???", inst_NOP, IMPL, 5},
+	[0xE8] = {"INX impl", inst_INX, IMPL, 2},
+	[0xE9] = {"SBC #", inst_SBC, IMM, 2},
+	[0xEA] = {"NOP impl", inst_NOP, IMPL, 2},
+	[0xEB] = {"???", inst_NOP, IMPL, 2},
+	[0xEC] = {"CPX abs", inst_CPX, ABS, 4},
+	[0xED] = {"SBC abs", inst_SBC, ABS, 4},
+	[0xEE] = {"INC abs", inst_INC, ABS, 6},
+	[0xEF] = {"???", inst_NOP, IMPL, 6},
+	[0xF0] = {"BEQ rel", inst_BEQ, REL, 2},
+	[0xF1] = {"SBC ind,Y", inst_SBC, INDY, 5},
+	[0xF2] = {"???", inst_NOP, IMPL, 2},
+	[0xF3] = {"???", inst_NOP, IMPL, 8},
+	[0xF4] = {"???", inst_NOP, ZP, 4},
+	[0xF5] = {"SBC zpg,X", inst_SBC, ZPX, 4},
+	[0xF6] = {"INC zpg,X", inst_INC, ZPX, 6},
+	[0xF7] = {"???", inst_NOP, IMPL, 6},
+	[0xF8] = {"SED impl", inst_SED, IMPL, 2},
+	[0xF9] = {"SBC abs,Y", inst_SBC, ABSY, 4},
+	[0xFA] = {"???", inst_NOP, IMPL, 2},
+	[0xFB] = {"???", inst_NOP, IMPL, 7},
+	[0xFC] = {"???", inst_NOP, ABSX, 4},
+	[0xFD] = {"SBC abs,X", inst_SBC, ABSX, 4},
+	[0xFE] = {"INC abs,X", inst_INC, ABSX, 7},
+	[0xFF] = {"???", inst_NOP, IMPL, 7}
+};
+
 Instruction inst; // the current instruction (used for convenience)
 int jumping; // used to check that we don't need to increment the PC after a jump
-void * read_addr;
-void * write_addr;
+void *read_addr;
+void *write_addr;
 
 /* Flag Checks */
 
@@ -48,12 +414,12 @@ static inline uint8_t stack_pull()
 
 /* Memory read/write wrappers */
 
-static inline uint8_t * read_ptr()
+static inline uint8_t *read_ptr()
 {
 	return read_addr = get_ptr[inst.mode]();
 }
 
-static inline uint8_t * write_ptr()
+static inline uint8_t *write_ptr()
 {
 	return write_addr = get_ptr[inst.mode]();
 }
@@ -71,9 +437,9 @@ static inline void take_branch()
 
 /* Instruction Implementations */
 
-static void inst_ADC()
+static void inst_ADC(void)
 {
-	uint8_t operand = * read_ptr();
+	uint8_t operand = *read_ptr();
 	unsigned int tmp = A + operand + (SR.bits.carry & 1);
 	if (SR.bits.decimal) {
 		tmp = (A & 0x0f) + (operand & 0x0f) + (SR.bits.carry & 1);
@@ -90,19 +456,19 @@ static void inst_ADC()
 
 static void inst_AND()
 {
-	A &= * read_ptr();
+	A &= *read_ptr();
 	N_flag(A);
 	Z_flag(A);
 }
 
 static void inst_ASL()
 {
-	uint8_t tmp = * read_ptr();
+	uint8_t tmp = *read_ptr();
 	SR.bits.carry = (tmp & 0x80) != 0;
 	tmp <<= 1;
 	N_flag(tmp);
 	Z_flag(tmp);
-	* write_ptr() = tmp;
+	*write_ptr() = tmp;
 }
 
 static void inst_BCC()
@@ -128,7 +494,7 @@ static void inst_BEQ()
 
 static void inst_BIT()
 {
-	uint8_t tmp = * read_ptr();
+	uint8_t tmp = *read_ptr();
 	N_flag(tmp);
 	Z_flag(tmp & A);
 	SR.bits.overflow = (tmp & 0x40) != 0;
@@ -205,7 +571,7 @@ static void inst_CLV()
 
 static void inst_CMP()
 {
-	uint8_t operand = * read_ptr();
+	uint8_t operand = *read_ptr();
 	uint8_t tmpDiff = A - operand;
 	N_flag(tmpDiff);
 	Z_flag(tmpDiff);
@@ -214,7 +580,7 @@ static void inst_CMP()
 
 static void inst_CPX()
 {
-	uint8_t operand = * read_ptr();
+	uint8_t operand = *read_ptr();
 	uint8_t tmpDiff = X - operand;
 	N_flag(tmpDiff);
 	Z_flag(tmpDiff);
@@ -223,7 +589,7 @@ static void inst_CPX()
 
 static void inst_CPY()
 {
-	uint8_t operand = * read_ptr();
+	uint8_t operand = *read_ptr();
 	uint8_t tmpDiff = Y - operand;
 	N_flag(tmpDiff);
 	Z_flag(tmpDiff);
@@ -232,11 +598,11 @@ static void inst_CPY()
 
 static void inst_DEC()
 {
-	uint8_t tmp = * read_ptr();
+	uint8_t tmp = *read_ptr();
 	tmp--;
 	N_flag(tmp);
 	Z_flag(tmp);
-	* write_ptr() = tmp;
+	*write_ptr() = tmp;
 }
 
 static void inst_DEX()
@@ -255,18 +621,18 @@ static void inst_DEY()
 
 static void inst_EOR()
 {
-	A ^= * read_ptr();
+	A ^= *read_ptr();
 	N_flag(A);
 	Z_flag(A);
 }
 
 static void inst_INC()
 {
-	uint8_t tmp = * read_ptr();
+	uint8_t tmp = *read_ptr();
 	tmp++;
 	N_flag(tmp);
 	Z_flag(tmp);
-	* write_ptr() = tmp;
+	*write_ptr() = tmp;
 }
 
 static void inst_INX()
@@ -301,33 +667,33 @@ static void inst_JSR()
 
 static void inst_LDA()
 {
-	A = * read_ptr();
+	A = *read_ptr();
 	N_flag(A);
 	Z_flag(A);
 }
 
 static void inst_LDX()
 {
-	X = * read_ptr();
+	X = *read_ptr();
 	N_flag(X);
 	Z_flag(X);
 }
 
 static void inst_LDY()
 {
-	Y = * read_ptr();
+	Y = *read_ptr();
 	N_flag(Y);
 	Z_flag(Y);
 }
 
 static void inst_LSR()
 {
-	uint8_t tmp = * read_ptr();
+	uint8_t tmp = *read_ptr();
 	SR.bits.carry = tmp & 1;
 	tmp >>= 1;
 	N_flag(tmp);
 	Z_flag(tmp);
-	* write_ptr() = tmp;
+	*write_ptr() = tmp;
 }
 
 static void inst_NOP()
@@ -339,7 +705,7 @@ static void inst_NOP()
 
 static void inst_ORA()
 {
-	A |= * read_ptr();
+	A |= *read_ptr();
 	N_flag(A);
 	Z_flag(A);
 }
@@ -379,24 +745,24 @@ static void inst_PLP()
 
 static void inst_ROL()
 {
-	int tmp = (* read_ptr()) << 1;
+	int tmp = (*read_ptr()) << 1;
 	tmp |= SR.bits.carry & 1;
 	SR.bits.carry = tmp > 0xFF;
 	tmp &= 0xFF;
 	N_flag(tmp);
 	Z_flag(tmp);
-	* write_ptr() = tmp;
+	*write_ptr() = tmp;
 }
 
 static void inst_ROR()
 {
-	int tmp = * read_ptr();
+	int tmp = *read_ptr();
 	tmp |= SR.bits.carry << 8;
 	SR.bits.carry = tmp & 1;
 	tmp >>= 1;
 	N_flag(tmp);
 	Z_flag(tmp);
-	* write_ptr() = tmp;
+	*write_ptr() = tmp;
 }
 
 static void inst_RTI()
@@ -419,7 +785,7 @@ static void inst_RTS()
 
 static void inst_SBC()
 {
-	uint8_t operand = * read_ptr();
+	uint8_t operand = *read_ptr();
 	unsigned int tmp, lo, hi;
 	tmp = A - operand - 1 + (SR.bits.carry & 1);
 	SR.bits.overflow = ((A^tmp)&(A^operand)&0x80) != 0;
@@ -455,18 +821,18 @@ static void inst_SEI()
 
 static void inst_STA()
 {
-	* write_ptr() = A;
+	*write_ptr() = A;
 	extra_cycles = 0; // STA has no addressing modes that use the extra cycle
 }
 
 static void inst_STX()
 {
-	* write_ptr() = X;
+	*write_ptr() = X;
 }
 
 static void inst_STY()
 {
-	* write_ptr() = Y;
+	*write_ptr() = Y;
 }
 
 static void inst_TAX()
@@ -511,51 +877,51 @@ static void inst_TYA()
 
 /* Addressing Implementations */
 
-uint8_t * get_IMPL()
+static uint8_t *get_IMPL(void)
 {
 	// dummy implementation; for completeness necessary for cycle counting NOP
 	// instructions
 	return &memory[0];
 }
 
-uint8_t * get_IMM()
+static uint8_t *get_IMM(void)
 {
 	return &memory[(uint16_t) (PC+1)];
 }
 
-uint16_t get_uint16()
+static uint16_t get_uint16(void)
 { // used only as part of other modes
 	uint16_t index;
 	memcpy(&index, get_IMM(), sizeof(index)); // hooray for optimising compilers
 	return index;
 }
 
-uint8_t * get_ZP()
+static uint8_t *get_ZP(void)
 {
-	return &memory[* get_IMM()];
+	return &memory[*get_IMM()];
 }
 
-uint8_t * get_ZPX()
+static uint8_t *get_ZPX(void)
 {
-	return &memory[((* get_IMM()) + X) & 0xFF];
+	return &memory[((*get_IMM()) + X) & 0xFF];
 }
 
-uint8_t * get_ZPY()
+static uint8_t *get_ZPY(void)
 {
-	return &memory[((* get_IMM()) + Y) & 0xFF];
+	return &memory[((*get_IMM()) + Y) & 0xFF];
 }
 
-uint8_t * get_ACC()
+static uint8_t *get_ACC(void)
 {
 	return &A;
 }
 
-uint8_t * get_ABS()
+static uint8_t *get_ABS(void)
 {
 	return &memory[get_uint16()];
 }
 
-uint8_t * get_ABSX()
+static uint8_t *get_ABSX(void)
 {
 	uint16_t ptr;
 	ptr = (uint16_t)(get_uint16() + X);
@@ -563,7 +929,7 @@ uint8_t * get_ABSX()
 	return &memory[ptr];
 }
 
-uint8_t * get_ABSY()
+static uint8_t *get_ABSY(void)
 {
 	uint16_t ptr;
 	ptr = (uint16_t)(get_uint16() + Y);
@@ -571,14 +937,14 @@ uint8_t * get_ABSY()
 	return &memory[ptr];
 }
 
-uint8_t * get_IND()
+static uint8_t * get_IND(void)
 {
 	uint16_t ptr;
 	memcpy(&ptr, get_ABS(), sizeof(ptr));
 	return &memory[ptr];
 }
 
-uint8_t * get_XIND()
+static uint8_t * get_XIND(void)
 {
 	uint16_t ptr;
 	ptr = ((* get_IMM()) + X) & 0xFF;
@@ -591,7 +957,7 @@ uint8_t * get_XIND()
 	return &memory[ptr];
 }
 
-uint8_t * get_INDY()
+static uint8_t * get_INDY(void)
 {
 	uint16_t ptr;
 	ptr = * get_IMM();
@@ -606,14 +972,14 @@ uint8_t * get_INDY()
 	return &memory[ptr];
 }
 
-uint8_t * get_REL()
+static uint8_t *get_REL(void)
 {
 	return &memory[(uint16_t) (PC + (int8_t) * get_IMM())];
 }
 
-uint8_t * get_JMP_IND_BUG()
+static uint8_t *get_JMP_IND_BUG(void)
 {
-	uint8_t * addr;
+	uint8_t *addr;
 	uint16_t ptr;
 
 	ptr = get_uint16();
@@ -634,304 +1000,6 @@ uint8_t * get_JMP_IND_BUG()
 }
 
 
-/* Construction of Tables */
-
-void init_tables() // this is only done at runtime to improve code readability.
-{
-	/* Instruction Lengths */
-
-	lengths[ACC]	= 1;
-	lengths[ABS]	= 3;
-	lengths[ABSX]	= 3;
-	lengths[ABSY]	= 3;
-	lengths[IMM]	= 2;
-	lengths[IMPL]	= 1;
-	lengths[IND]	= 3;
-	lengths[XIND]	= 2;
-	lengths[INDY]	= 2;
-	lengths[REL]	= 2;
-	lengths[ZP]		= 2;
-	lengths[ZPX]	= 2;
-	lengths[ZPY]	= 2;
-	lengths[JMP_IND_BUG] = 3;
-
-	/* Addressing Modes */
-	
-	get_ptr[ACC]	= get_ACC;
-	get_ptr[ABS]	= get_ABS;
-	get_ptr[ABSX]	= get_ABSX;
-	get_ptr[ABSY]	= get_ABSY;
-	get_ptr[IMM]	= get_IMM;
-	get_ptr[IMPL]	= get_IMPL;
-	get_ptr[IND]	= get_IND;
-	get_ptr[XIND]	= get_XIND;
-	get_ptr[INDY]	= get_INDY;
-	get_ptr[REL]	= get_REL;
-	get_ptr[ZP]	= get_ZP;
-	get_ptr[ZPX]	= get_ZPX;
-	get_ptr[ZPY]	= get_ZPY;
-	get_ptr[JMP_IND_BUG] = get_JMP_IND_BUG;
-
-	/* Instructions */
-	
-	instructions[0x00] = (Instruction) {"BRK impl", inst_BRK, IMPL, 7};
-	instructions[0x01] = (Instruction) {"ORA X,ind", inst_ORA, XIND, 6};
-	instructions[0x02] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x03] = (Instruction) {"???", inst_NOP, IMPL, 8};
-	instructions[0x04] = (Instruction) {"???", inst_NOP, ZP, 3};
-	instructions[0x05] = (Instruction) {"ORA zpg", inst_ORA, ZP, 3};
-	instructions[0x06] = (Instruction) {"ASL zpg", inst_ASL, ZP, 5};
-	instructions[0x07] = (Instruction) {"???", inst_NOP, IMPL, 5};
-	instructions[0x08] = (Instruction) {"PHP impl", inst_PHP, IMPL, 3};
-	instructions[0x09] = (Instruction) {"ORA #", inst_ORA, IMM, 2};
-	instructions[0x0A] = (Instruction) {"ASL A", inst_ASL, ACC, 2};
-	instructions[0x0B] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x0C] = (Instruction) {"???", inst_NOP, ABS, 4};
-	instructions[0x0D] = (Instruction) {"ORA abs", inst_ORA, ABS, 4};
-	instructions[0x0E] = (Instruction) {"ASL abs", inst_ASL, ABS, 6};
-	instructions[0x0F] = (Instruction) {"???", inst_NOP, IMPL, 6};
-	instructions[0x10] = (Instruction) {"BPL rel", inst_BPL, REL, 2};
-	instructions[0x11] = (Instruction) {"ORA ind,Y", inst_ORA, INDY, 5};
-	instructions[0x12] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x13] = (Instruction) {"???", inst_NOP, IMPL, 8};
-	instructions[0x14] = (Instruction) {"???", inst_NOP, ZP, 4};
-	instructions[0x15] = (Instruction) {"ORA zpg,X", inst_ORA, ZPX, 4};
-	instructions[0x16] = (Instruction) {"ASL zpg,X", inst_ASL, ZPX, 6};
-	instructions[0x17] = (Instruction) {"???", inst_NOP, IMPL, 6};
-	instructions[0x18] = (Instruction) {"CLC impl", inst_CLC, IMPL, 2};
-	instructions[0x19] = (Instruction) {"ORA abs,Y", inst_ORA, ABSY, 4};
-	instructions[0x1A] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x1B] = (Instruction) {"???", inst_NOP, IMPL, 7};
-	instructions[0x1C] = (Instruction) {"???", inst_NOP, ABSX, 4};
-	instructions[0x1D] = (Instruction) {"ORA abs,X", inst_ORA, ABSX, 4};
-	instructions[0x1E] = (Instruction) {"ASL abs,X", inst_ASL, ABSX, 7};
-	instructions[0x1F] = (Instruction) {"???", inst_NOP, IMPL, 7};
-	instructions[0x20] = (Instruction) {"JSR abs", inst_JSR, ABS, 6};
-	instructions[0x21] = (Instruction) {"AND X,ind", inst_AND, XIND, 6};
-	instructions[0x22] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x23] = (Instruction) {"???", inst_NOP, IMPL, 8};
-	instructions[0x24] = (Instruction) {"BIT zpg", inst_BIT, ZP, 3};
-	instructions[0x25] = (Instruction) {"AND zpg", inst_AND, ZP, 3};
-	instructions[0x26] = (Instruction) {"ROL zpg", inst_ROL, ZP, 5};
-	instructions[0x27] = (Instruction) {"???", inst_NOP, IMPL, 5};
-	instructions[0x28] = (Instruction) {"PLP impl", inst_PLP, IMPL, 4};
-	instructions[0x29] = (Instruction) {"AND #", inst_AND, IMM, 2};
-	instructions[0x2A] = (Instruction) {"ROL A", inst_ROL, ACC, 2};
-	instructions[0x2B] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x2C] = (Instruction) {"BIT abs", inst_BIT, ABS, 4};
-	instructions[0x2D] = (Instruction) {"AND abs", inst_AND, ABS, 4};
-	instructions[0x2E] = (Instruction) {"ROL abs", inst_ROL, ABS, 6};
-	instructions[0x2F] = (Instruction) {"???", inst_NOP, IMPL, 6};
-	instructions[0x30] = (Instruction) {"BMI rel", inst_BMI, REL, 2};
-	instructions[0x31] = (Instruction) {"AND ind,Y", inst_AND, INDY, 5};
-	instructions[0x32] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x33] = (Instruction) {"???", inst_NOP, IMPL, 8};
-	instructions[0x34] = (Instruction) {"???", inst_NOP, ZP, 4};
-	instructions[0x35] = (Instruction) {"AND zpg,X", inst_AND, ZPX, 4};
-	instructions[0x36] = (Instruction) {"ROL zpg,X", inst_ROL, ZPX, 6};
-	instructions[0x37] = (Instruction) {"???", inst_NOP, IMPL, 6};
-	instructions[0x38] = (Instruction) {"SEC impl", inst_SEC, IMPL, 2};
-	instructions[0x39] = (Instruction) {"AND abs,Y", inst_AND, ABSY, 4};
-	instructions[0x3A] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x3B] = (Instruction) {"???", inst_NOP, IMPL, 7};
-	instructions[0x3C] = (Instruction) {"???", inst_NOP, ABSX, 4};
-	instructions[0x3D] = (Instruction) {"AND abs,X", inst_AND, ABSX, 4};
-	instructions[0x3E] = (Instruction) {"ROL abs,X", inst_ROL, ABSX, 7};
-	instructions[0x3F] = (Instruction) {"???", inst_NOP, IMPL, 7};
-	instructions[0x40] = (Instruction) {"RTI impl", inst_RTI, IMPL, 6};
-	instructions[0x41] = (Instruction) {"EOR X,ind", inst_EOR, XIND, 6};
-	instructions[0x42] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x43] = (Instruction) {"???", inst_NOP, IMPL, 8};
-	instructions[0x44] = (Instruction) {"???", inst_NOP, ZP, 3};
-	instructions[0x45] = (Instruction) {"EOR zpg", inst_EOR, ZP, 3};
-	instructions[0x46] = (Instruction) {"LSR zpg", inst_LSR, ZP, 5};
-	instructions[0x47] = (Instruction) {"???", inst_NOP, IMPL, 5};
-	instructions[0x48] = (Instruction) {"PHA impl", inst_PHA, IMPL, 3};
-	instructions[0x49] = (Instruction) {"EOR #", inst_EOR, IMM, 2};
-	instructions[0x4A] = (Instruction) {"LSR A", inst_LSR, ACC, 2};
-	instructions[0x4B] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x4C] = (Instruction) {"JMP abs", inst_JMP, ABS, 3};
-	instructions[0x4D] = (Instruction) {"EOR abs", inst_EOR, ABS, 4};
-	instructions[0x4E] = (Instruction) {"LSR abs", inst_LSR, ABS, 6};
-	instructions[0x4F] = (Instruction) {"???", inst_NOP, IMPL, 6};
-	instructions[0x50] = (Instruction) {"BVC rel", inst_BVC, REL, 2};
-	instructions[0x51] = (Instruction) {"EOR ind,Y", inst_EOR, INDY, 5};
-	instructions[0x52] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x53] = (Instruction) {"???", inst_NOP, IMPL, 8};
-	instructions[0x54] = (Instruction) {"???", inst_NOP, ZP, 4};
-	instructions[0x55] = (Instruction) {"EOR zpg,X", inst_EOR, ZPX, 4};
-	instructions[0x56] = (Instruction) {"LSR zpg,X", inst_LSR, ZPX, 6};
-	instructions[0x57] = (Instruction) {"???", inst_NOP, IMPL, 6};
-	instructions[0x58] = (Instruction) {"CLI impl", inst_CLI, IMPL, 2};
-	instructions[0x59] = (Instruction) {"EOR abs,Y", inst_EOR, ABSY, 4};
-	instructions[0x5A] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x5B] = (Instruction) {"???", inst_NOP, IMPL, 7};
-	instructions[0x5C] = (Instruction) {"???", inst_NOP, ABSX, 4};
-	instructions[0x5D] = (Instruction) {"EOR abs,X", inst_EOR, ABSX, 4};
-	instructions[0x5E] = (Instruction) {"LSR abs,X", inst_LSR, ABSX, 7};
-	instructions[0x5F] = (Instruction) {"???", inst_NOP, IMPL, 7};
-	instructions[0x60] = (Instruction) {"RTS impl", inst_RTS, IMPL, 6};
-	instructions[0x61] = (Instruction) {"ADC X,ind", inst_ADC, XIND, 6};
-	instructions[0x62] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x63] = (Instruction) {"???", inst_NOP, IMPL, 8};
-	instructions[0x64] = (Instruction) {"???", inst_NOP, ZP, 3};
-	instructions[0x65] = (Instruction) {"ADC zpg", inst_ADC, ZP, 3};
-	instructions[0x66] = (Instruction) {"ROR zpg", inst_ROR, ZP, 5};
-	instructions[0x67] = (Instruction) {"???", inst_NOP, IMPL, 5};
-	instructions[0x68] = (Instruction) {"PLA impl", inst_PLA, IMPL, 4};
-	instructions[0x69] = (Instruction) {"ADC #", inst_ADC, IMM, 2};
-	instructions[0x6A] = (Instruction) {"ROR A", inst_ROR, ACC, 2};
-	instructions[0x6B] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x6C] = (Instruction) {"JMP ind", inst_JMP, JMP_IND_BUG, 5};
-	instructions[0x6D] = (Instruction) {"ADC abs", inst_ADC, ABS, 4};
-	instructions[0x6E] = (Instruction) {"ROR abs", inst_ROR, ABS, 6};
-	instructions[0x6F] = (Instruction) {"???", inst_NOP, IMPL, 6};
-	instructions[0x70] = (Instruction) {"BVS rel", inst_BVS, REL, 2};
-	instructions[0x71] = (Instruction) {"ADC ind,Y", inst_ADC, INDY, 5};
-	instructions[0x72] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x73] = (Instruction) {"???", inst_NOP, IMPL, 8};
-	instructions[0x74] = (Instruction) {"???", inst_NOP, ZP, 4};
-	instructions[0x75] = (Instruction) {"ADC zpg,X", inst_ADC, ZPX, 4};
-	instructions[0x76] = (Instruction) {"ROR zpg,X", inst_ROR, ZPX, 6};
-	instructions[0x77] = (Instruction) {"???", inst_NOP, IMPL, 6};
-	instructions[0x78] = (Instruction) {"SEI impl", inst_SEI, IMPL, 2};
-	instructions[0x79] = (Instruction) {"ADC abs,Y", inst_ADC, ABSY, 4};
-	instructions[0x7A] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x7B] = (Instruction) {"???", inst_NOP, IMPL, 7};
-	instructions[0x7C] = (Instruction) {"???", inst_NOP, ABSX, 4};
-	instructions[0x7D] = (Instruction) {"ADC abs,X", inst_ADC, ABSX, 4};
-	instructions[0x7E] = (Instruction) {"ROR abs,X", inst_ROR, ABSX, 7};
-	instructions[0x7F] = (Instruction) {"???", inst_NOP, IMPL, 7};
-	instructions[0x80] = (Instruction) {"???", inst_NOP, IMM, 2};
-	instructions[0x81] = (Instruction) {"STA X,ind", inst_STA, XIND, 6};
-	instructions[0x82] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x83] = (Instruction) {"???", inst_NOP, IMPL, 6};
-	instructions[0x84] = (Instruction) {"STY zpg", inst_STY, ZP, 3};
-	instructions[0x85] = (Instruction) {"STA zpg", inst_STA, ZP, 3};
-	instructions[0x86] = (Instruction) {"STX zpg", inst_STX, ZP, 3};
-	instructions[0x87] = (Instruction) {"???", inst_NOP, IMPL, 3};
-	instructions[0x88] = (Instruction) {"DEY impl", inst_DEY, IMPL, 2};
-	instructions[0x89] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x8A] = (Instruction) {"TXA impl", inst_TXA, IMPL, 2};
-	instructions[0x8B] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x8C] = (Instruction) {"STY abs", inst_STY, ABS, 4};
-	instructions[0x8D] = (Instruction) {"STA abs", inst_STA, ABS, 4};
-	instructions[0x8E] = (Instruction) {"STX abs", inst_STX, ABS, 4};
-	instructions[0x8F] = (Instruction) {"???", inst_NOP, IMPL, 4};
-	instructions[0x90] = (Instruction) {"BCC rel", inst_BCC, REL, 2};
-	instructions[0x91] = (Instruction) {"STA ind,Y", inst_STA, INDY, 6};
-	instructions[0x92] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0x93] = (Instruction) {"???", inst_NOP, IMPL, 6};
-	instructions[0x94] = (Instruction) {"STY zpg,X", inst_STY, ZPX, 4};
-	instructions[0x95] = (Instruction) {"STA zpg,X", inst_STA, ZPX, 4};
-	instructions[0x96] = (Instruction) {"STX zpg,Y", inst_STX, ZPY, 4};
-	instructions[0x97] = (Instruction) {"???", inst_NOP, IMPL, 4};
-	instructions[0x98] = (Instruction) {"TYA impl", inst_TYA, IMPL, 2};
-	instructions[0x99] = (Instruction) {"STA abs,Y", inst_STA, ABSY, 5};
-	instructions[0x9A] = (Instruction) {"TXS impl", inst_TXS, IMPL, 2};
-	instructions[0x9B] = (Instruction) {"???", inst_NOP, IMPL, 5};
-	instructions[0x9C] = (Instruction) {"???", inst_NOP, IMPL, 5};
-	instructions[0x9D] = (Instruction) {"STA abs,X", inst_STA, ABSX, 5};
-	instructions[0x9E] = (Instruction) {"???", inst_NOP, IMPL, 5};
-	instructions[0x9F] = (Instruction) {"???", inst_NOP, IMPL, 5};
-	instructions[0xA0] = (Instruction) {"LDY #", inst_LDY, IMM, 2};
-	instructions[0xA1] = (Instruction) {"LDA X,ind", inst_LDA, XIND, 6};
-	instructions[0xA2] = (Instruction) {"LDX #", inst_LDX, IMM, 2};
-	instructions[0xA3] = (Instruction) {"???", inst_NOP, IMPL, 6};
-	instructions[0xA4] = (Instruction) {"LDY zpg", inst_LDY, ZP, 3};
-	instructions[0xA5] = (Instruction) {"LDA zpg", inst_LDA, ZP, 3};
-	instructions[0xA6] = (Instruction) {"LDX zpg", inst_LDX, ZP, 3};
-	instructions[0xA7] = (Instruction) {"???", inst_NOP, IMPL, 3};
-	instructions[0xA8] = (Instruction) {"TAY impl", inst_TAY, IMPL, 2};
-	instructions[0xA9] = (Instruction) {"LDA #", inst_LDA, IMM, 2};
-	instructions[0xAA] = (Instruction) {"TAX impl", inst_TAX, IMPL, 2};
-	instructions[0xAB] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0xAC] = (Instruction) {"LDY abs", inst_LDY, ABS, 4};
-	instructions[0xAD] = (Instruction) {"LDA abs", inst_LDA, ABS, 4};
-	instructions[0xAE] = (Instruction) {"LDX abs", inst_LDX, ABS, 4};
-	instructions[0xAF] = (Instruction) {"???", inst_NOP, IMPL, 4};
-	instructions[0xB0] = (Instruction) {"BCS rel", inst_BCS, REL, 2};
-	instructions[0xB1] = (Instruction) {"LDA ind,Y", inst_LDA, INDY, 5};
-	instructions[0xB2] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0xB3] = (Instruction) {"???", inst_NOP, IMPL, 5};
-	instructions[0xB4] = (Instruction) {"LDY zpg,X", inst_LDY, ZPX, 4};
-	instructions[0xB5] = (Instruction) {"LDA zpg,X", inst_LDA, ZPX, 4};
-	instructions[0xB6] = (Instruction) {"LDX zpg,Y", inst_LDX, ZPY, 4};
-	instructions[0xB7] = (Instruction) {"???", inst_NOP, IMPL, 4};
-	instructions[0xB8] = (Instruction) {"CLV impl", inst_CLV, IMPL, 2};
-	instructions[0xB9] = (Instruction) {"LDA abs,Y", inst_LDA, ABSY, 4};
-	instructions[0xBA] = (Instruction) {"TSX impl", inst_TSX, IMPL, 2};
-	instructions[0xBB] = (Instruction) {"???", inst_NOP, IMPL, 4};
-	instructions[0xBC] = (Instruction) {"LDY abs,X", inst_LDY, ABSX, 4};
-	instructions[0xBD] = (Instruction) {"LDA abs,X", inst_LDA, ABSX, 4};
-	instructions[0xBE] = (Instruction) {"LDX abs,Y", inst_LDX, ABSY, 4};
-	instructions[0xBF] = (Instruction) {"???", inst_NOP, IMPL, 4};
-	instructions[0xC0] = (Instruction) {"CPY #", inst_CPY, IMM, 2};
-	instructions[0xC1] = (Instruction) {"CMP X,ind", inst_CMP, XIND, 6};
-	instructions[0xC2] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0xC3] = (Instruction) {"???", inst_NOP, IMPL, 8};
-	instructions[0xC4] = (Instruction) {"CPY zpg", inst_CPY, ZP, 3};
-	instructions[0xC5] = (Instruction) {"CMP zpg", inst_CMP, ZP, 3};
-	instructions[0xC6] = (Instruction) {"DEC zpg", inst_DEC, ZP, 5};
-	instructions[0xC7] = (Instruction) {"???", inst_NOP, IMPL, 5};
-	instructions[0xC8] = (Instruction) {"INY impl", inst_INY, IMPL, 2};
-	instructions[0xC9] = (Instruction) {"CMP #", inst_CMP, IMM, 2};
-	instructions[0xCA] = (Instruction) {"DEX impl", inst_DEX, IMPL, 2};
-	instructions[0xCB] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0xCC] = (Instruction) {"CPY abs", inst_CPY, ABS, 4};
-	instructions[0xCD] = (Instruction) {"CMP abs", inst_CMP, ABS, 4};
-	instructions[0xCE] = (Instruction) {"DEC abs", inst_DEC, ABS, 6};
-	instructions[0xCF] = (Instruction) {"???", inst_NOP, IMPL, 6};
-	instructions[0xD0] = (Instruction) {"BNE rel", inst_BNE, REL, 2};
-	instructions[0xD1] = (Instruction) {"CMP ind,Y", inst_CMP, INDY, 5};
-	instructions[0xD2] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0xD3] = (Instruction) {"???", inst_NOP, IMPL, 8};
-	instructions[0xD4] = (Instruction) {"???", inst_NOP, ZP, 4};
-	instructions[0xD5] = (Instruction) {"CMP zpg,X", inst_CMP, ZPX, 4};
-	instructions[0xD6] = (Instruction) {"DEC zpg,X", inst_DEC, ZPX, 6};
-	instructions[0xD7] = (Instruction) {"???", inst_NOP, IMPL, 6};
-	instructions[0xD8] = (Instruction) {"CLD impl", inst_CLD, IMPL, 2};
-	instructions[0xD9] = (Instruction) {"CMP abs,Y", inst_CMP, ABSY, 4};
-	instructions[0xDA] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0xDB] = (Instruction) {"???", inst_NOP, IMPL, 7};
-	instructions[0xDC] = (Instruction) {"???", inst_NOP, ABSX, 4};
-	instructions[0xDD] = (Instruction) {"CMP abs,X", inst_CMP, ABSX, 4};
-	instructions[0xDE] = (Instruction) {"DEC abs,X", inst_DEC, ABSX, 7};
-	instructions[0xDF] = (Instruction) {"???", inst_NOP, IMPL, 7};
-	instructions[0xE0] = (Instruction) {"CPX #", inst_CPX, IMM, 2};
-	instructions[0xE1] = (Instruction) {"SBC X,ind", inst_SBC, XIND, 6};
-	instructions[0xE2] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0xE3] = (Instruction) {"???", inst_NOP, IMPL, 8};
-	instructions[0xE4] = (Instruction) {"CPX zpg", inst_CPX, ZP, 3};
-	instructions[0xE5] = (Instruction) {"SBC zpg", inst_SBC, ZP, 3};
-	instructions[0xE6] = (Instruction) {"INC zpg", inst_INC, ZP, 5};
-	instructions[0xE7] = (Instruction) {"???", inst_NOP, IMPL, 5};
-	instructions[0xE8] = (Instruction) {"INX impl", inst_INX, IMPL, 2};
-	instructions[0xE9] = (Instruction) {"SBC #", inst_SBC, IMM, 2};
-	instructions[0xEA] = (Instruction) {"NOP impl", inst_NOP, IMPL, 2};
-	instructions[0xEB] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0xEC] = (Instruction) {"CPX abs", inst_CPX, ABS, 4};
-	instructions[0xED] = (Instruction) {"SBC abs", inst_SBC, ABS, 4};
-	instructions[0xEE] = (Instruction) {"INC abs", inst_INC, ABS, 6};
-	instructions[0xEF] = (Instruction) {"???", inst_NOP, IMPL, 6};
-	instructions[0xF0] = (Instruction) {"BEQ rel", inst_BEQ, REL, 2};
-	instructions[0xF1] = (Instruction) {"SBC ind,Y", inst_SBC, INDY, 5};
-	instructions[0xF2] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0xF3] = (Instruction) {"???", inst_NOP, IMPL, 8};
-	instructions[0xF4] = (Instruction) {"???", inst_NOP, ZP, 4};
-	instructions[0xF5] = (Instruction) {"SBC zpg,X", inst_SBC, ZPX, 4};
-	instructions[0xF6] = (Instruction) {"INC zpg,X", inst_INC, ZPX, 6};
-	instructions[0xF7] = (Instruction) {"???", inst_NOP, IMPL, 6};
-	instructions[0xF8] = (Instruction) {"SED impl", inst_SED, IMPL, 2};
-	instructions[0xF9] = (Instruction) {"SBC abs,Y", inst_SBC, ABSY, 4};
-	instructions[0xFA] = (Instruction) {"???", inst_NOP, IMPL, 2};
-	instructions[0xFB] = (Instruction) {"???", inst_NOP, IMPL, 7};
-	instructions[0xFC] = (Instruction) {"???", inst_NOP, ABSX, 4};
-	instructions[0xFD] = (Instruction) {"SBC abs,X", inst_SBC, ABSX, 4};
-	instructions[0xFE] = (Instruction) {"INC abs,X", inst_INC, ABSX, 7};
-	instructions[0xFF] = (Instruction) {"???", inst_NOP, IMPL, 7};
-}
-
 void reset_cpu(int _a, int _x, int _y, int _sp, int _sr, int _pc)
 {
 	A = _a;
@@ -951,13 +1019,13 @@ void reset_cpu(int _a, int _x, int _y, int _sp, int _sr, int _pc)
 	total_cycles = 0;
 }
 
-int load_rom(char * filename, int load_addr)
+int load_rom(char *filename, int load_addr)
 {
 	int loaded_size, max_size;
 
 	memset(memory, 0, sizeof(memory)); // clear ram first
 	
-	FILE * fp = fopen(filename, "r");
+	FILE *fp = fopen(filename, "r");
 	if (fp == NULL) {
 		printf("Error: could not open file\n");
 		return -1;
@@ -1000,9 +1068,9 @@ int step_cpu(int verbose) // returns cycle count
 	return inst.cycles + extra_cycles;
 }
 
-void save_memory(char * filename) { // dump memory for analysis (slows down emulation significantly)
+void save_memory(char *filename) { // dump memory for analysis (slows down emulation significantly)
 	if (filename == NULL) filename = "memdump";
-	FILE * fp = fopen(filename, "w");
+	FILE *fp = fopen(filename, "w");
 	fwrite(&memory, sizeof(memory), 1, fp);
 	fclose(fp);
 }
