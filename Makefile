@@ -14,4 +14,4 @@ clean:
 	$(RM) 6502-emu $(OBJ)
 
 test: 6502-emu
-	./6502-emu examples/ehbasic.rom
+	./6502-emu -i examples/ehbasic.rom

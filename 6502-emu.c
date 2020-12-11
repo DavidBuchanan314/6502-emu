@@ -169,7 +169,10 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 	
-	if (interactive) raw_stdin(); // allow individual keystrokes to be detected
+	if (interactive) {
+		printf("*** Entering interactive mode. CTRL+X to exit ***\n\n");
+		raw_stdin(); // allow individual keystrokes to be detected
+	}
 	
 	//init_tables();
 	init_uart();
