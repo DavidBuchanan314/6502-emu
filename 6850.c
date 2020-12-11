@@ -6,7 +6,9 @@
 #include "6502.h"
 #include "6850.h"
 
-int n;
+static int n;
+static union UartStatusReg uart_SR;
+static uint8_t incoming_char;
 
 void init_uart() {
 	memory[DATA_ADDR] = 0;
