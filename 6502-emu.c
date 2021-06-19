@@ -19,10 +19,10 @@ void step_delay()
 	nanosleep(&req, &rem);
 }
 
-void run_cpu(long cycle_stop, int verbose, int mem_dump, int break_pc, int fast)
+void run_cpu(uint64_t cycle_stop, int verbose, int mem_dump, int break_pc, int fast)
 {
-	long cycles = 0;
-	int cycles_per_step = (CPU_FREQ / (ONE_SECOND / STEP_DURATION));
+	uint64_t cycles = 0;
+	uint64_t cycles_per_step = (CPU_FREQ / (ONE_SECOND / STEP_DURATION));
 	
 	for (;;) {
 		for (cycles %= cycles_per_step; cycles < cycles_per_step;) {
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 {
 	int a, x, y, sp, sr, pc, load_addr;
 	int verbose, interactive, mem_dump, break_pc, fast;
-	long cycles;
+	uint64_t cycles;
 	int opt;
 
 	verbose = 0;
