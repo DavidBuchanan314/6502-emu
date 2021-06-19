@@ -416,12 +416,12 @@ static inline uint8_t stack_pull()
 
 static inline uint8_t *read_ptr()
 {
-	return read_addr = get_ptr[inst.mode]();
+	return (uint8_t*) (read_addr = get_ptr[inst.mode]());
 }
 
 static inline uint8_t *write_ptr()
 {
-	return write_addr = get_ptr[inst.mode]();
+	return (uint8_t*) (write_addr = get_ptr[inst.mode]());
 }
 
 /* Branch logic common to all branch instructions */
@@ -1068,7 +1068,7 @@ int step_cpu(int verbose) // returns cycle count
 	return inst.cycles + extra_cycles;
 }
 
-void save_memory(char *filename) { // dump memory for analysis (slows down emulation significantly)
+void save_memory(const char *filename) { // dump memory for analysis (slows down emulation significantly)
 	if (filename == NULL) filename = "memdump";
 	FILE *fp = fopen(filename, "w");
 	fwrite(&memory, sizeof(memory), 1, fp);

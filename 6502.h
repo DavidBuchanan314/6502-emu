@@ -58,7 +58,7 @@ typedef enum {
 } Mode;
 
 typedef struct {
-	char *mnemonic;
+	const char *mnemonic;
 	void (*function)();
 	Mode mode;
 	uint8_t cycles;
@@ -74,4 +74,4 @@ int load_rom(char *filename, int load_addr);
 
 int step_cpu(int verbose);
 
-void save_memory(char *filename);
+void save_memory(const char *filename);
