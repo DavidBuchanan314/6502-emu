@@ -9,8 +9,9 @@
 static int n;
 static union UartStatusReg uart_SR;
 static uint8_t incoming_char;
+static int interactive;
 
-void init_uart() {
+void init_uart(int is_interactive) {
 	memory[DATA_ADDR] = 0;
 	
 	uart_SR.byte = 0;
@@ -19,6 +20,7 @@ void init_uart() {
 	uart_SR.bits.RDRF = 0;
 	incoming_char = 0;
 	
+	interactive = is_interactive;
 }
 
 int stdin_ready() {
@@ -40,17 +42,19 @@ void step_uart() {
 	}
 	
 	/* update input register if empty */
-	if ((n++ % 10000) == 0) { // polling stdin every cycle is performance intensive. This is a bit of a dirty hack.
+	if ((n++ % 100) == 0) { // polling stdin every cycle is performance intensive. This is a bit of a dirty hack.
 		if (!uart_SR.bits.RDRF && stdin_ready()) { // the real hardware has no buffer. Remote the RDRF check for more accurate emulation.
 			if (read(0, &incoming_char, 1) != 1) {
 				printf("Warning: read() returned 0\n");
 			}
-			if (incoming_char == 0x18) { // CTRL+X
-				printf("\r\n");
-				exit(0);
-			}
-			if (incoming_char == 0x7F) { // Backspace
-				incoming_char = '\b';
+			if (interactive) {
+				if (incoming_char == 0x18) { // CTRL+X
+					printf("\r\n");
+					exit(0);
+				}
+				if (incoming_char == 0x7F) { // Backspace
+					incoming_char = '\b';
+				}
 			}
 			uart_SR.bits.RDRF = 1;
 		}

@@ -175,7 +175,7 @@ int main(int argc, char *argv[])
 	}
 	
 	//init_tables();
-	init_uart();
+	init_uart(interactive);
 	
 	reset_cpu(a, x, y, sp, sr, pc);
 	run_cpu(cycles, verbose, mem_dump, break_pc, fast);
